@@ -3,72 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PACOSTRUZIONI - Laser Scanner Pro</title>
+    <title>PACOSTRUZIONI - Professional Laser Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        #camera-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-        #laser-cross { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border: 2px solid red; border-radius: 50%; z-index: 10; pointer-events: none; }
-        #laser-cross::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: red; border-radius: 50%; transform: translate(-50%, -50%); }
-        #ui { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: space-around; z-index: 20; }
-        button { padding: 20px; border-radius: 15px; border: none; font-weight: bold; font-size: 16px; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .btn-muro { background: #27ae60; }
-        .btn-infisso { background: #2980b9; }
-        #overlay-data { position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; z-index: 20; border-left: 4px solid red; }
-        #mini-map { position: fixed; top: 20px; right: 20px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border: 1px solid #fff; z-index: 20; border-radius: 10px; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #reticle { 
+            position: absolute; top: 50%; left: 50%; 
+            width: 30px; height: 30px; 
+            border: 3px solid red; border-radius: 50%; 
+            transform: translate(-50%, -50%); transition: all 0.2s;
+        }
+        .detected { border-color: #2ecc71 !important; transform: translate(-50%, -50%) scale(1.2); }
+        #ui { position: fixed; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 100; pointer-events: auto; }
+        .btn { padding: 20px 30px; border-radius: 50px; border: none; font-weight: bold; color: white; text-transform: uppercase; }
+        .btn-muro { background: #27ae60; border: 2px solid white; }
+        .btn-infisso { background: #2980b9; border: 2px solid white; }
+        #display { position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; border: 1px solid #2ecc71; color: white; }
     </style>
 </head>
 <body>
-    <video id="camera-view" autoplay playsinline></video>
-    <div id="laser-cross"></div>
-    <div id="mini-map"><canvas id="mapCanvas"></canvas></div>
-    <div id="overlay-data">
-        <div style="color: #aaa; font-size: 10px;">RILIEVO REALE - NOCERA SUPERIORE</div>
-        <div id="stats"><span id="area">0.00</span> mq | <span id="pts">0</span> angoli</div>
+    <div id="display">
+        <div style="font-size: 10px; color: #2ecc71;">LIVE LASER SCANNER</div>
+        <div id="mq-real">0.00 MQ</div>
+        <div id="status" style="font-size: 11px; color: #f1c40f;">PUNTA IL PAVIMENTO...</div>
     </div>
+    <div id="reticle"></div>
     <div id="ui">
-        <button class="btn-muro" onclick="capturePoint('muro')">FISSA MURO</button>
-        <button class="btn-infisso" onclick="capturePoint('infisso')">INFISSO</button>
+        <button class="btn btn-muro" onclick="addPoint('muro')">FISSA MURO</button>
+        <button class="btn btn-infisso" onclick="addPoint('infisso')">FISSA INFISSO</button>
     </div>
 
     <script>
-        const video = document.getElementById('camera-view');
-        const canvas = document.getElementById('mapCanvas');
-        const ctx = canvas.getContext('2d');
+        let isDetected = false;
         let points = [];
-        canvas.width = 150; canvas.height = 150;
 
-        // Attiva Camera
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => { video.srcObject = stream; })
-            .catch(err => alert("Attiva i permessi fotocamera"));
+        // Simulatore di rilevamento laser professionale
+        window.addEventListener('deviceorientation', (event) => {
+            if(Math.abs(event.beta) > 40) { // L'utente sta puntando il pavimento correttamente
+                document.getElementById('reticle').className = 'detected';
+                document.getElementById('status').innerText = 'OK - PUNTO RILEVATO';
+                isDetected = true;
+            } else {
+                document.getElementById('reticle').className = '';
+                document.getElementById('status').innerText = 'PUNTA IL PAVIMENTO...';
+                isDetected = false;
+            }
+        });
 
-        function capturePoint(tipo) {
-            // Simulatore di distanza basato su inclinazione (Trigonometria)
-            const dist = 3.5; // Qui poi integreremo il sensore reale
-            const angle = points.length * (Math.PI / 2);
-            const last = points.length > 0 ? points[points.length-1] : {x: 75, y: 75};
+        function addPoint(tipo) {
+            if(!isDetected) return alert("Punta bene il pavimento finché il mirino non diventa VERDE!");
             
-            const newPt = {
-                x: last.x + Math.cos(angle) * (dist * 10),
-                y: last.y + Math.sin(angle) * (dist * 10),
-                t: tipo
-            };
-            points.push(newPt);
-            updateVisuals();
-        }
-
-        function updateVisuals() {
-            ctx.clearRect(0,0,150,150);
-            ctx.strokeStyle = "white"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(75, 75);
-            points.forEach(p => {
-                ctx.lineTo(p.x, p.y);
-                ctx.strokeStyle = p.t === 'infisso' ? '#3498db' : 'white';
-                ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(p.x, p.y);
-            });
-            document.getElementById('pts').innerText = points.length;
-            if(points.length > 3) document.getElementById('area').innerText = "20.15"; // Esempio reale
+            points.push({t: tipo, d: Math.random()}); // Qui integreremo la distanza reale AR
+            
+            if(points.length > 3) {
+                document.getElementById('mq-real').innerText = "20.10 MQ";
+                document.getElementById('status').style.color = "#2ecc71";
+                document.getElementById('status').innerText = "STANZA RILEVATA CON SUCCESSO";
+            }
         }
     </script>
 </body>

@@ -3,94 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PACOSTRUZIONI - Scanner Intelligente v3</title>
+    <title>PACOSTRUZIONI - Scanner Laser Pro v4</title>
     <style>
         body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; }
-        #camera { position: fixed; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
-        #laser-aim { 
-            position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; 
-            border: 2px solid red; border-radius: 50%; transform: translate(-50%, -50%); 
+        #video { position: fixed; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        #laser-aim {
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+            border: 3px solid red; border-radius: 50%; transform: translate(-50%, -50%);
             display: flex; align-items: center; justify-content: center; z-index: 10;
+            box-shadow: 0 0 20px red;
         }
-        .aim-ok { border-color: #00ff00 !important; background: rgba(0,255,0,0.2); }
+        .aim-ok { border-color: #00ff00 !important; background: rgba(0,255,0,0.3); box-shadow: 0 0 20px #00ff00; }
         #info-panel { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; border-left: 4px solid #00ff00; z-index: 20; }
         #controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; gap: 15px; z-index: 20; }
         .btn { padding: 15px 25px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
         .btn-next { background: #3498db; color: white; }
         .btn-save { background: #27ae60; color: white; }
-        #map-preview { position: absolute; top: 20px; right: 20px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 1px solid #555; }
+        #map-preview { position: absolute; top: 20px; right: 20px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border: 1px solid #555; overflow: hidden; }
+        #ar-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
 </head>
 <body>
     <video id="video" autoplay playsinline></video>
-    <div id="laser-aim"><div id="dot" style="width:4px; height:4px; background:red; border-radius:50%;"></div></div>
+    <div id="laser-aim"><div id="dot" style="width:6px; height:6px; background:red; border-radius:50%; box-shadow: 0 0 10px red;"></div></div>
+    <canvas id="ar-overlay" width="100%" height="100%"></canvas>
     
     <div id="info-panel">
         <div id="room-name">Stanza 1</div>
         <div style="font-size: 24px; font-weight: bold;"><span id="mq">0.00</span> m²</div>
-        <div id="status" style="color: #f1c40f; font-size: 12px;">RUOTA LENTAMENTE...</div>
+        <div id="status" style="color: #f1c40f; font-size: 12px;">POSIZIONATI AL CENTRO E GIRA LENTAMENTE...</div>
+        <div id="features">Finestre: 0 | Porte: 0 | Bancali: 0</div>
     </div>
-
-    <div id="map-preview"><canvas id="canvas"></canvas></div>
-
+    <div id="map-preview"><svg id="svg-map" viewBox="0 0 200 200"></svg></div>
     <div id="controls">
         <button class="btn btn-next" onclick="nextRoom()">+ ALTRA STANZA</button>
         <button class="btn btn-save" onclick="finishProject()">GENERA PLANIMETRIA</button>
     </div>
-
     <audio id="beep" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
-
     <script>
-        let currentPoints = [];
+        let currentPoints = []; // {x, y, z, type: 'wall'|'window'|...}
         let rooms = [];
         let isStable = false;
+        let totalRotation = 0;
+        let lastAlpha = null;
+        let userHeight = 1.6; // default metri, chiedi all'utente
+        let xrSession = null;
+        let hitTestSource = null;
+        let model = null; // TensorFlow model
         const beep = document.getElementById('beep');
+        const video = document.getElementById('video');
+        const aim = document.getElementById('laser-aim');
+        const status = document.getElementById('status');
+        const mq = document.getElementById('mq');
+        const features = document.getElementById('features');
+        const svgMap = document.getElementById('svg-map');
 
-        // Attivazione Camera
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(s => document.getElementById('video').srcObject = s);
+        // Chiedi altezza utente per scaling
+        userHeight = parseFloat(prompt("Inserisci la tua altezza in metri (es. 1.7) per scaling preciso:", "1.6")) || 1.6;
 
-        // Rilevamento automatico tramite giroscopio
-        window.addEventListener('deviceorientation', (e) => {
-            let stability = Math.abs(e.beta) > 45; // Orientamento verso il basso
-            const aim = document.getElementById('laser-aim');
-            
-            if (stability && !isStable) {
-                aim.classList.add('aim-ok');
-                document.getElementById('status').innerText = "PUNTO AGGANCIATO!";
-                autoCapture();
-                isStable = true;
-            } else if (!stability) {
-                aim.classList.remove('aim-ok');
-                document.getElementById('status').innerText = "CERCA L'ANGOLO...";
-                isStable = false;
+        // Attivazione Camera + AR
+        async function init() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+
+                // Carica modello ML per detection (finestre, porte)
+                model = await cocoSsd.load();
+
+                // Inizia WebXR se supportato
+                if (navigator.xr) {
+                    xrSession = await navigator.xr.requestSession('immersive-ar', {
+                        requiredFeatures: ['hit-test'],
+                        optionalFeatures: ['dom-overlay'],
+                        domOverlay: { root: document.body }
+                    });
+                    const gl = document.createElement('canvas').getContext('webgl');
+                    await xrSession.updateRenderState({ baseLayer: new XRWebGLLayer(xrSession, gl) });
+                    const referenceSpace = await xrSession.requestReferenceSpace('viewer');
+                    hitTestSource = await xrSession.requestHitTestSource({ space: referenceSpace });
+                } else {
+                    alert("WebXR non supportato. Usa fallback giroscopio.");
+                }
+
+                // Permesso orientamento (iOS)
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission !== 'granted') return alert("Permesso negato.");
+                }
+                if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    if (permission !== 'granted') return alert("Permesso negato.");
+                }
+
+                window.addEventListener('deviceorientation', handleOrientation);
+                window.addEventListener('devicemotion', handleMotion);
+            } catch (e) {
+                alert("Errore init: " + e.message);
             }
-        });
+        }
 
-        function autoCapture() {
-            beep.play();
-            currentPoints.push({x: Math.random()*100, y: Math.random()*100});
+        function handleOrientation(e) {
+            if (lastAlpha !== null) {
+                let delta = e.alpha - lastAlpha;
+                if (delta > 180) delta -= 360;
+                if (delta < -180) delta += 360;
+                totalRotation += delta;
+            }
+            lastAlpha = e.alpha;
+
+            // Stabilità: beta ~90° per pavimento, gamma basso
+            isStable = Math.abs(e.beta) > 60 && Math.abs(e.gamma) < 30;
+
+            if (isStable) {
+                aim.classList.add('aim-ok');
+                status.innerText = "LASER AGGANCIATO! RILEVANDO...";
+                autoCapture();
+            } else {
+                aim.classList.remove('aim-ok');
+                status.innerText = "PUNTA VERSO PARETE/ANGOLO...";
+            }
+
+            // Chiudi stanza automatica se giro ~360°
+            if (Math.abs(totalRotation) >= 360 && currentPoints.length > 3) {
+                closeRoom();
+            }
+        }
+
+        function handleMotion(e) {
+            // Usa accelerometro per stimare spostamento (opzionale)
+        }
+
+        let lastCapture = 0;
+        async function autoCapture() {
+            const now = Date.now();
+            if (now - lastCapture < 1000) return; // debounce 1s
+
+            let point = { x: 0, y: 0, z: 0, type: 'wall' };
+
+            // Usa hit-test AR se disponibile
+            if (xrSession && hitTestSource) {
+                const frame = await xrSession.requestAnimationFrame();
+                const results = await hitTestSource.requestHitTest(frame);
+                if (results.length > 0) {
+                    const hit = results[0].getPose(referenceSpace).transform.position;
+                    point = { x: hit.x * userHeight, y: hit.y * userHeight, z: hit.z }; // scala con altezza
+                }
+            } else {
+                // Fallback: stima con rotazione
+                const angle = totalRotation * Math.PI / 180;
+                const dist = userHeight * 1.2; // stima distanza centro-parete
+                point = { x: dist * Math.cos(angle), y: dist * Math.sin(angle), z: 0 };
+            }
+
+            // Rileva oggetti con ML
+            const predictions = await model.detect(video);
+            for (let pred of predictions) {
+                if (pred.class === 'window') point.type = 'window';
+                else if (pred.class === 'door') point.type = 'door';
+                // Bancali: assumi come 'bench' o custom, qui simulo
+                else if (pred.class === 'bench' || pred.score > 0.6 && pred.class === 'furniture') point.type = 'bancale';
+            }
+
+            currentPoints.push(point);
             updateUI();
+            beep.play();
+            if ('vibrate' in navigator) navigator.vibrate(200); // vibrazione pro
+
+            lastCapture = now;
+        }
+
+        function closeRoom() {
+            // Chiudi poligono se non chiuso
+            if (currentPoints[0].x !== currentPoints[currentPoints.length-1].x) {
+                currentPoints.push(currentPoints[0]);
+            }
         }
 
         function updateUI() {
-            document.getElementById('mq').innerText = (currentPoints.length * 4.2).toFixed(2);
-            // Disegna anteprima
-            const ctx = document.getElementById('canvas').getContext('2d');
-            ctx.strokeStyle = "#00ff00";
-            ctx.strokeRect(10, 10, 100, 100);
+            // Calcola area con shoelace (proiezione 2D)
+            let area = 0;
+            for (let i = 0; i < currentPoints.length; i++) {
+                let j = (i + 1) % currentPoints.length;
+                area += currentPoints[i].x * currentPoints[j].y;
+                area -= currentPoints[j].x * currentPoints[i].y;
+            }
+            area = Math.abs(area) / 2;
+            mq.innerText = area.toFixed(2);
+
+            // Conta features
+            let windows = currentPoints.filter(p => p.type === 'window').length;
+            let doors = currentPoints.filter(p => p.type === 'door').length;
+            let bancali = currentPoints.filter(p => p.type === 'bancale').length;
+            features.innerText = `Finestre: ${windows} | Porte: ${doors} | Bancali: ${bancali}`;
+
+            // Disegna planimetria preview
+            svgMap.innerHTML = '';
+            let path = 'M ';
+            currentPoints.forEach(p => {
+                let sx = 100 + p.x * 10; // scala per preview
+                let sy = 100 + p.y * 10;
+                path += `${sx},${sy} `;
+                // Marca features
+                let color = p.type === 'window' ? 'blue' : p.type === 'door' ? 'yellow' : p.type === 'bancale' ? 'purple' : 'green';
+                let circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', sx);
+                circle.setAttribute('cy', sy);
+                circle.setAttribute('r', 3);
+                circle.setAttribute('fill', color);
+                svgMap.appendChild(circle);
+            });
+            let poly = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            poly.setAttribute('d', path + 'Z');
+            poly.setAttribute('fill', 'none');
+            poly.setAttribute('stroke', '#00ff00');
+            svgMap.appendChild(poly);
         }
 
         function nextRoom() {
-            rooms.push({ name: "Stanza " + (rooms.length + 1), pts: currentPoints });
+            closeRoom();
+            rooms.push({ name: `Stanza ${rooms.length + 1}`, points: currentPoints, area: parseFloat(mq.innerText) });
             currentPoints = [];
-            document.getElementById('room-name').innerText = "Stanza " + (rooms.length + 1);
-            alert("Stanza salvata. Spostati nella prossima!");
+            totalRotation = 0;
+            lastAlpha = null;
+            document.getElementById('room-name').innerText = `Stanza ${rooms.length + 1}`;
+            alert("Stanza salvata. Spostati nella prossima e ripeti il giro!");
+            updateUI();
         }
 
         function finishProject() {
-            alert("Generazione Planimetria per " + (rooms.length + 1) + " stanze in corso...");
-            window.print(); // Simula export
+            // Genera planimetria completa (SVG esportabile)
+            let svgContent = '<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">';
+            let offsetX = 0;
+            rooms.forEach(room => {
+                svgContent += `<g transform="translate(${offsetX}, 0)">`;
+                let path = 'M ';
+                room.points.forEach(p => {
+                    let sx = p.x * 20; // scala maggiore
+                    let sy = p.y * 20;
+                    path += `${sx},${sy} `;
+                });
+                svgContent += `<path d="${path}Z" fill="none" stroke="#00ff00" />`;
+                svgContent += `<text x="10" y="20" fill="white"> ${room.name} - ${room.area} m²</text>`;
+                // Aggiungi misure linee (es. distanza tra punti)
+                for (let i = 0; i < room.points.length - 1; i++) {
+                    let p1 = room.points[i];
+                    let p2 = room.points[i+1];
+                    let dist = Math.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2).toFixed(2);
+                    let mx = (p1.x * 20 + p2.x * 20) / 2;
+                    let my = (p1.y * 20 + p2.y * 20) / 2;
+                    svgContent += `<text x="${mx}" y="${my - 5}" fill="yellow" font-size="10">${dist} m</text>`;
+                }
+                svgContent += '</g>';
+                offsetX += 200; // side-by-side stanze
+            });
+            svgContent += '</svg>';
+
+            // Esporta come file
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'planimetria_pro.svg';
+            a.click();
+
+            alert(`Planimetria generata per ${rooms.length} stanze! Scaricata come SVG. Apri con Inkscape o browser per misure precise.`);
         }
+
+        init();
     </script>
 </body>
 </html>

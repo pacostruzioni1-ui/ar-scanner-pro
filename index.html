@@ -260,7 +260,7 @@
         Scrivi una domanda su cantieri, planimetrie, misure o qualsiasi argomento
       </p>
       
-      <textarea id="prompt" placeholder="Esempio: 'Quanto costa in media una planimetria per un appartamento di 120 mq a Torino?'"></textarea>
+      <textarea id="prompt" placeholder="Esempio: 'Quanto costa una planimetria a Torino?'"></textarea>
       
       <button id="generateBtn" class="btn btn-primary" style="padding: 18px 50px; font-size: 1.2rem;">
         Genera Risposta con Gemini
@@ -402,7 +402,7 @@
     });
 
     // ────────────────────────────────────────────────
-    // Gemini API Demo (usa la tua chiave reale)
+    // Gemini API Demo con la tua chiave
     const GEMINI_API_KEY = "AIzaSyDEytVKMaZ8SIEEJkPED1VUx8Pz8r7Pxx0";
 
     document.getElementById('generateBtn').addEventListener('click', async () => {
@@ -428,14 +428,17 @@
           }
         );
 
-        if (!res.ok) throw new Error(`Errore ${res.status}`);
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error?.message || `Errore HTTP ${res.status}`);
+        }
 
         const data = await res.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta ricevuta';
 
         responseDiv.innerHTML = `<strong>Gemini dice:</strong><br><br>${text.replace(/\n/g, '<br>')}`;
       } catch (err) {
-        responseDiv.innerHTML = `<p style="color:#ff6b6b;">Errore: ${err.message}<br>Controlla la chiave API o i limiti giornalieri.</p>`;
+        responseDiv.innerHTML = `<p style="color:#ff6b6b;">Errore: ${err.message}<br>La chiave potrebbe essere scaduta, bloccata o aver raggiunto il limite giornaliero.</p>`;
       }
     });
   </script>

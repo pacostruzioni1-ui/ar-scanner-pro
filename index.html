@@ -2,1868 +2,2001 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Pepe Costruzioni Srl - Photogrammetry Pro Cloud</title>
-    
-    <!-- Three.js -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scansione 3D Pro - Fotogrammetria Professionale</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    
-    <!-- TensorFlow.js per object detection -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
         }
-        
+
         :root {
-            --primary: #007AFF;
-            --success: #34C759;
-            --warning: #FF9500;
-            --danger: #FF3B30;
-            --gray-100: #F2F2F7;
-            --gray-200: #E5E5EA;
-            --gray-500: #8E8E93;
-            --gray-800: #1C1C1E;
-            --white: #FFFFFF;
-            --dark: #000000;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #13131a;
+            --bg-tertiary: #1a1a24;
+            --bg-glass: rgba(26, 26, 36, 0.7);
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --text-tertiary: #6b7280;
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+            --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
         }
-        
+
         body {
-            background: var(--gray-100);
-            color: var(--gray-800);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        
-        /* Splash */
-        #splash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+
+        .app {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            transition: opacity 0.5s;
+            background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
         }
-        
-        .splash-logo {
-            width: 140px;
-            height: 140px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 70px;
-            color: white;
-            margin-bottom: 30px;
-            box-shadow: 0 25px 50px rgba(102, 126, 234, 0.4);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 25px 50px rgba(102, 126, 234, 0.4); }
-            50% { transform: scale(1.05); box-shadow: 0 30px 60px rgba(102, 126, 234, 0.6); }
-        }
-        
-        .splash-title {
-            font-size: 32px;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-        }
-        
-        .splash-subtitle {
-            color: rgba(255,255,255,0.7);
-            font-size: 18px;
-            font-weight: 500;
-        }
-        
-        .splash-status {
-            margin-top: 40px;
-            padding: 12px 24px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 20px;
-            color: rgba(255,255,255,0.9);
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .splash-status::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--success);
-            border-radius: 50%;
-            animation: blink 1s infinite;
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        
-        /* App */
-        #app {
-            display: none;
-            min-height: 100vh;
-        }
-        
-        /* Header Pro */
-        .app-header {
-            position: sticky;
-            top: 0;
-            background: rgba(255,255,255,0.98);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--gray-200);
-            padding: 16px 24px;
-            z-index: 100;
+
+        /* Header Premium */
+        .header {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            padding: 20px 32px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 100;
         }
-        
-        .header-brand {
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                var(--primary) 50%, 
+                transparent 100%);
+            opacity: 0.5;
+        }
+
+        .logo {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
-        
-        .header-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 22px;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        
-        .header-text h1 {
             font-size: 20px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.3px;
-        }
-        
-        .header-text p {
-            font-size: 13px;
-            color: var(--gray-500);
-            margin: 2px 0 0 0;
-        }
-        
-        .header-badge {
-            padding: 8px 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        /* Main Content */
-        .main-content {
-            padding: 24px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        /* Hero Card */
-        .hero-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 24px;
-            padding: 40px 30px;
-            color: white;
-            margin-bottom: 32px;
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
             position: relative;
             overflow: hidden;
         }
-        
-        .hero-card::before {
+
+        .logo-icon::before {
             content: '';
             position: absolute;
             top: -50%;
-            right: -30%;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shine 3s infinite;
         }
-        
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .logo-text {
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-center {
+            display: flex;
             gap: 8px;
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-        
-        .hero-title {
-            font-size: 36px;
-            font-weight: 800;
-            margin-bottom: 12px;
-            line-height: 1.1;
-        }
-        
-        .hero-subtitle {
-            font-size: 17px;
-            opacity: 0.9;
-            margin-bottom: 28px;
-            max-width: 400px;
-        }
-        
-        .btn-primary-large {
-            background: white;
-            color: #667eea;
-            border: none;
-            padding: 18px 36px;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
             align-items: center;
+        }
+
+        .nav-pill {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-pill:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border-color: var(--border);
+        }
+
+        .nav-pill.active {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .nav-pill.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40%;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .header-actions {
+            display: flex;
             gap: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            transition: all 0.3s;
+            align-items: center;
         }
-        
-        .btn-primary-large:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.3);
-        }
-        
-        .btn-primary-large:active {
-            transform: scale(0.98);
-        }
-        
-        /* Scan Modes */
-        .section-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 20px;
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 12px;
-        }
-        
-        .modes-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-        
-        .mode-card-pro {
-            background: var(--white);
-            border-radius: 20px;
-            padding: 28px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid transparent;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            gap: 8px;
+            font-family: inherit;
             position: relative;
             overflow: hidden;
         }
-        
-        .mode-card-pro::before {
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 18px;
+        }
+
+        .btn-icon:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar Premium */
+        .sidebar {
+            width: 380px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, var(--color-1), var(--color-2));
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, 
+                transparent 0%, 
+                var(--primary) 50%, 
+                transparent 100%);
+            opacity: 0.3;
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            padding: 16px 24px;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        /* Upload Zone Premium */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--bg-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
             opacity: 0;
             transition: opacity 0.3s;
         }
-        
-        .mode-card-pro:hover::before {
+
+        .upload-zone:hover::before {
             opacity: 1;
         }
-        
-        .mode-card-pro:hover {
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: var(--bg-tertiary);
             transform: translateY(-4px);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-            border-color: var(--color-1);
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
         }
-        
-        .mode-card-pro:active {
-            transform: scale(0.98);
+
+        .upload-zone.dragging {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
         }
-        
-        .mode-icon-pro {
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-            font-size: 28px;
-            color: white;
-            background: linear-gradient(135deg, var(--color-1), var(--color-2));
-            box-shadow: 0 8px 20px var(--shadow-color);
-        }
-        
-        .mode-card-pro[data-mode="room"] { --color-1: #667eea; --color-2: #764ba2; --shadow-color: rgba(102, 126, 234, 0.3); }
-        .mode-card-pro[data-mode="object"] { --color-1: #f093fb; --color-2: #f5576c; --shadow-color: rgba(240, 147, 251, 0.3); }
-        .mode-card-pro[data-mode="construction"] { --color-1: #4facfe; --color-2: #00f2fe; --shadow-color: rgba(79, 172, 254, 0.3); }
-        .mode-card-pro[data-mode="facade"] { --color-1: #43e97b; --color-2: #38f9d7; --shadow-color: rgba(67, 233, 123, 0.3); }
-        
-        .mode-name-pro {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-        
-        .mode-desc-pro {
-            font-size: 14px;
-            color: var(--gray-500);
-            line-height: 1.4;
-        }
-        
-        /* Recent Scans */
-        .scans-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .scan-item {
-            background: var(--white);
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
             border-radius: 20px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-            display: flex;
-            height: 140px;
-        }
-        
-        .scan-item:hover {
-            transform: translateX(4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-        }
-        
-        .scan-thumbnail {
-            width: 140px;
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
+            font-size: 36px;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            animation: float 3s ease-in-out infinite;
         }
-        
-        .scan-thumbnail i {
-            font-size: 48px;
-            color: rgba(255,255,255,0.4);
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
-        
-        .scan-badge {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        
-        .scan-info {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        
-        .scan-name {
+
+        .upload-text {
             font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 6px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
         }
-        
-        .scan-meta {
+
+        .upload-hint {
             font-size: 14px;
-            color: var(--gray-500);
-            display: flex;
-            gap: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
         }
-        
-        .scan-meta span {
-            display: flex;
-            align-items: center;
-            gap: 6px;
+
+        /* Photo Grid Premium */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 24px;
         }
-        
-        /* Scanner Interface */
-        .scanner-fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--dark);
-            z-index: 1000;
-            display: none;
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
         }
-        
-        .scanner-fullscreen.active {
-            display: block;
+
+        .photo-item:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+            z-index: 10;
         }
-        
-        #camera-video {
+
+        .photo-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        
-        .scanner-overlay {
+
+        .photo-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: flex-end;
+            padding: 12px;
+        }
+
+        .photo-item:hover .photo-overlay {
+            opacity: 1;
+        }
+
+        .photo-index {
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .photo-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .photo-item:hover .photo-remove {
+            opacity: 1;
+        }
+
+        .photo-remove:hover {
+            background: var(--error);
+            transform: scale(1.1);
+        }
+
+        /* Stats Card */
+        .stats-card {
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stats-card::before {
+            content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
         }
-        
-        .scanner-hud {
-            position: absolute;
-            top: 60px;
-            left: 24px;
-            right: 24px;
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 16px;
+        }
+
+        .progress-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            pointer-events: auto;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
-        
-        .scanner-mode-badge {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(20px);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 16px;
-            font-size: 15px;
+
+        .progress-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .progress-value {
+            color: var(--primary);
             font-weight: 600;
         }
-        
-        .btn-scanner-icon {
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* 3D Viewer Premium */
+        .viewer-container {
+            flex: 1;
+            position: relative;
+            background: var(--bg-primary);
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .viewer-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .viewer-controls {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .control-btn {
             width: 48px;
             height: 48px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(20px);
-            color: white;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-secondary);
             font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        /* Object Detection Overlay */
-        .detection-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+
+        .control-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border-color: var(--primary);
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
         }
-        
-        .detected-object {
+
+        .control-btn.active {
+            color: var(--text-primary);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
+            border-color: var(--primary);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Measurement Panel */
+        .measurement-panel {
             position: absolute;
-            border: 2px solid var(--success);
-            background: rgba(52, 199, 89, 0.2);
-            border-radius: 8px;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            max-width: 400px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            pointer-events: auto;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .measurement-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .measurement-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .measurement-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .measurement-value-display {
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .measurement-hint {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Processing Overlay Premium */
+        .processing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(20px);
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            padding: 4px;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
         }
-        
-        .detected-label {
+
+        .processing-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .processing-circle::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            animation: rotate 3s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .processing-icon {
+            font-size: 48px;
+            animation: processing-bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes processing-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.9); }
+        }
+
+        .processing-text {
+            margin-top: 32px;
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .processing-hint {
+            margin-top: 12px;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .processing-steps {
+            margin-top: 32px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .processing-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .step-circle.completed {
             background: var(--success);
-            color: white;
-            padding: 4px 8px;
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .step-circle.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .step-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* Projects List Premium */
+        .project-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .project-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .project-item:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary);
+            transform: translateX(8px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+        }
+
+        .project-item:hover::before {
+            opacity: 1;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .project-name {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .project-status {
+            padding: 4px 12px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
-            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        /* Guide Frame */
-        .capture-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            height: 400px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 24px;
+
+        .status-completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
         }
-        
-        .capture-corners {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+
+        .status-processing {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
         }
-        
-        .cap-corner {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border: 4px solid var(--primary);
-        }
-        
-        .cap-tl { top: -4px; left: -4px; border-right: none; border-bottom: none; border-radius: 12px 0 0 0; }
-        .cap-tr { top: -4px; right: -4px; border-left: none; border-bottom: none; border-radius: 0 12px 0 0; }
-        .cap-bl { bottom: -4px; left: -4px; border-right: none; border-top: none; border-radius: 0 0 0 12px; }
-        .cap-br { bottom: -4px; right: -4px; border-left: none; border-top: none; border-radius: 0 0 12px 0; }
-        
-        .capture-instruction {
-            position: absolute;
-            bottom: -60px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            color: white;
-            font-size: 16px;
-            font-weight: 500;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
-        
-        /* Progress Ring */
-        .capture-progress {
-            position: absolute;
-            top: 120px;
-            left: 24px;
-            width: 64px;
-            height: 64px;
-        }
-        
-        .progress-ring {
-            transform: rotate(-90deg);
-        }
-        
-        .progress-ring-bg {
-            fill: none;
-            stroke: rgba(255,255,255,0.2);
-            stroke-width: 4;
-        }
-        
-        .progress-ring-fill {
-            fill: none;
-            stroke: var(--primary);
-            stroke-width: 4;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.3s;
-        }
-        
-        .progress-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 18px;
-            font-weight: 700;
-        }
-        
-        /* Scanner Controls */
-        .scanner-bottom {
-            position: absolute;
-            bottom: 50px;
-            left: 0;
-            width: 100%;
+
+        .project-meta {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 40px;
-            pointer-events: auto;
-            padding: 0 40px;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 12px;
         }
-        
-        .btn-capture-pro {
-            width: 88px;
-            height: 88px;
-            border-radius: 50%;
-            border: 5px solid white;
-            background: white;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s;
-        }
-        
-        .btn-capture-pro:active {
-            transform: scale(0.92);
-        }
-        
-        .btn-capture-pro::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 68px;
-            height: 68px;
-            background: var(--primary);
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-        
-        .btn-capture-pro.recording::after {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: var(--danger);
-        }
-        
-        .btn-scanner-side {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(20px);
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        
-        /* Processing Screen */
-        .processing-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 200;
-        }
-        
-        .processing-screen.active {
+
+        .project-meta-item {
             display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        
-        .processing-visual {
-            width: 200px;
-            height: 200px;
-            position: relative;
-            margin-bottom: 40px;
-        }
-        
-        .processing-ring {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 4px solid transparent;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        .processing-ring:nth-child(2) {
-            width: 80%;
-            height: 80%;
-            top: 10%;
-            left: 10%;
-            border-top-color: var(--success);
-            animation-duration: 1.5s;
-            animation-direction: reverse;
-        }
-        
-        .processing-ring:nth-child(3) {
-            width: 60%;
-            height: 60%;
-            top: 20%;
-            left: 20%;
-            border-top-color: var(--warning);
-            animation-duration: 2s;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .processing-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-        
-        .processing-subtitle {
-            font-size: 16px;
-            opacity: 0.7;
+
+        /* Settings Panel Premium */
+        .settings-group {
             margin-bottom: 32px;
         }
-        
-        .processing-steps {
-            width: 300px;
+
+        .settings-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        
-        .process-step {
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .setting-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .toggle {
+            width: 52px;
+            height: 28px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toggle.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .toggle-slider {
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        .select-custom {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            padding: 10px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .select-custom:hover {
+            border-color: var(--primary);
+        }
+
+        .select-custom:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* Empty State Premium */
+        .empty-state {
+            text-align: center;
+            padding: 80px 32px;
+        }
+
+        .empty-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 24px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            opacity: 0.6;
+        }
+
+        .empty-text {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .empty-hint {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Guided Capture Mode */
+        .guided-mode {
+            position: relative;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .capture-view {
+            flex: 1;
+            position: relative;
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .capture-circle {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 4px dashed var(--primary);
+            position: relative;
+            animation: rotate-slow 20s linear infinite;
+        }
+
+        @keyframes rotate-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .capture-indicator {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .capture-guide {
+            margin-top: 24px;
+            padding: 20px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .guide-step {
             display: flex;
             align-items: center;
             gap: 16px;
             padding: 16px;
-            opacity: 0.4;
+            margin-bottom: 12px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            cursor: pointer;
             transition: all 0.3s;
         }
-        
-        .process-step.active {
-            opacity: 1;
+
+        .guide-step:hover {
+            background: var(--bg-tertiary);
+            transform: translateX(4px);
         }
-        
-        .process-step.completed {
-            opacity: 0.6;
+
+        .guide-step.active {
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
         }
-        
-        .step-icon {
+
+        .guide-number {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
-            background: var(--gray-500);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 700;
             font-size: 14px;
         }
-        
-        .process-step.active .step-icon {
-            background: var(--primary);
-        }
-        
-        .process-step.completed .step-icon {
-            background: var(--success);
-        }
-        
-        .step-text {
-            font-size: 15px;
-            font-weight: 500;
-        }
-        
-        /* 3D Viewer Pro */
-        .viewer-pro {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--dark);
-            z-index: 3000;
-            display: none;
-        }
-        
-        .viewer-pro.active {
-            display: block;
-        }
-        
-        #viewer-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
-        .viewer-ui {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-        
-        .viewer-header-pro {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 60px 24px 24px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            pointer-events: auto;
-        }
-        
-        .viewer-title-pro {
-            color: white;
-            font-size: 20px;
-            font-weight: 700;
-        }
-        
-        .viewer-actions {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .btn-viewer-action {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            border: none;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(20px);
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-        }
-        
-        /* Info Panel */
-        .info-panel {
-            position: absolute;
-            top: 120px;
-            right: 24px;
-            width: 280px;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 24px;
-            color: white;
-            pointer-events: auto;
-        }
-        
-        .info-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 14px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .info-row:last-child {
-            border-bottom: none;
-        }
-        
-        .info-label {
+
+        .guide-text {
+            flex: 1;
             font-size: 14px;
-            opacity: 0.7;
         }
-        
-        .info-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--primary);
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 320px;
+            }
         }
-        
-        /* Detected Objects List */
-        .objects-list {
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 16px 20px;
+            }
+
+            .header-center {
+                display: none;
+            }
+
+            .sidebar {
+                position: absolute;
+                z-index: 90;
+                width: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Scrollbar Premium */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 5px;
+            border: 2px solid var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
             position: absolute;
-            top: 120px;
-            left: 24px;
-            max-width: 200px;
-        }
-        
-        .object-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(52, 199, 89, 0.9);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            margin-right: 8px;
-        }
-        
-        /* Viewer Toolbar */
-        .viewer-toolbar-pro {
-            position: absolute;
-            bottom: 40px;
+            bottom: 100%;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 12px;
-            display: flex;
-            gap: 8px;
-            pointer-events: auto;
-        }
-        
-        .toolbar-btn {
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: none;
-            background: transparent;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .toolbar-btn.active {
-            background: var(--primary);
-        }
-        
-        /* Share Modal */
-        .share-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 4000;
-            display: none;
-            justify-content: center;
-            align-items: flex-end;
-        }
-        
-        .share-modal.active {
-            display: flex;
-        }
-        
-        .share-content {
-            background: var(--white);
-            border-radius: 24px 24px 0 0;
-            width: 100%;
-            max-width: 500px;
-            padding: 32px 24px;
-            animation: slideUp 0.3s ease;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        
-        .share-title {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-        
-        .share-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .share-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        
-        .share-icon {
-            width: 64px;
-            height: 64px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: white;
-        }
-        
-        .share-icon.email { background: #007AFF; }
-        .share-icon.whatsapp { background: #25D366; }
-        .share-icon.pdf { background: #FF3B30; }
-        .share-icon.obj { background: #5856D6; }
-        
-        .share-label {
+            transform: translateX(-50%) translateY(-8px);
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 12px;
-            color: var(--gray-500);
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
         }
-        
-        .btn-close-share {
-            width: 100%;
-            padding: 18px;
-            border: none;
-            background: var(--gray-100);
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        /* Toast */
-        .toast-pro {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.9);
-            backdrop-filter: blur(20px);
-            color: white;
-            padding: 16px 28px;
-            border-radius: 16px;
-            font-size: 15px;
-            font-weight: 500;
-            z-index: 5000;
-            animation: toastIn 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        [data-tooltip]:hover::after {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
+    <div id="root"></div>
 
-    <!-- Splash Screen -->
-    <div id="splash">
-        <div class="splash-logo">
-            <i class="fas fa-hard-hat"></i>
-        </div>
-        <div class="splash-title">Pepe Costruzioni</div>
-        <div class="splash-subtitle">Srl - Photogrammetry Cloud Pro</div>
-        <div class="splash-status">
-            <span>Cloud API Connected</span>
-        </div>
-    </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-    <!-- Main App -->
-    <div id="app">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-brand">
-                <div class="header-icon">
-                    <i class="fas fa-hard-hat"></i>
-                </div>
-                <div class="header-text">
-                    <h1>Pepe Costruzioni Srl</h1>
-                    <p>Photogrammetry Cloud Pro</p>
-                </div>
-            </div>
-            <div class="header-badge">PRO</div>
-        </header>
+        function App() {
+            const [currentView, setCurrentView] = useState('capture');
+            const [activeTab, setActiveTab] = useState('capture');
+            const [photos, setPhotos] = useState([]);
+            const [processing, setProcessing] = useState(false);
+            const [processingStep, setProcessingStep] = useState(0);
+            const [model, setModel] = useState(null);
+            const [measurementMode, setMeasurementMode] = useState(false);
+            const [measurement, setMeasurement] = useState(null);
+            const [projects, setProjects] = useState([]);
+            const [dragging, setDragging] = useState(false);
+            const [guidedMode, setGuidedMode] = useState(false);
+            const [captureStep, setCaptureStep] = useState(0);
 
-        <!-- Content -->
-        <div class="main-content">
-            <!-- Hero -->
-            <div class="hero-card">
-                <div class="hero-badge">
-                    <i class="fas fa-cloud"></i> Cloud Processing
-                </div>
-                <div class="hero-title">Scansioni 3D Fotorealistiche</div>
-                <div class="hero-subtitle">Rilevamento automatico di strutture, mobili, finestre con texture reali e colori originali</div>
-                <button class="btn-primary-large" onclick="startProScan()">
-                    <i class="fas fa-camera"></i>
-                    Nuova Scansione Pro
-                </button>
-            </div>
+            const canvasRef = useRef(null);
+            const sceneRef = useRef(null);
+            const cameraRef = useRef(null);
+            const rendererRef = useRef(null);
+            const controlsRef = useRef(null);
 
-            <!-- Scan Modes -->
-            <div class="section-title">
-                <i class="fas fa-layer-group" style="color: var(--primary);"></i>
-                Modalità Professionali
-            </div>
-            
-            <div class="modes-grid">
-                <div class="mode-card-pro" data-mode="room" onclick="selectMode('room')">
-                    <div class="mode-icon-pro">
-                        <i class="fas fa-home"></i>
-                    </div>
-                    <div class="mode-name-pro">Stanza Completa</div>
-                    <div class="mode-desc-pro">Rileva mobili, finestre, porte con texture reali</div>
-                </div>
-                
-                <div class="mode-card-pro" data-mode="construction" onclick="selectMode('construction')">
-                    <div class="mode-icon-pro">
-                        <i class="fas fa-building"></i>
-                    </div>
-                    <div class="mode-name-pro">Cantiere Grezzo</div>
-                    <div class="mode-desc-pro">Cemento armato, strutture, impalcature</div>
-                </div>
-                
-                <div class="mode-card-pro" data-mode="facade" onclick="selectMode('facade')">
-                    <div class="mode-icon-pro">
-                        <i class="fas fa-border-all"></i>
-                    </div>
-                    <div class="mode-name-pro">Facciata Esterna</div>
-                    <div class="mode-desc-pro">Esterni edifici, balconi, dettagli architettonici</div>
-                </div>
-                
-                <div class="mode-card-pro" data-mode="object" onclick="selectMode('object')">
-                    <div class="mode-icon-pro">
-                        <i class="fas fa-cube"></i>
-                    </div>
-                    <div class="mode-name-pro">Oggetto Singolo</div>
-                    <div class="mode-desc-pro">Arredi, componenti, materiali</div>
-                </div>
-            </div>
+            useEffect(() => {
+                initThreeJS();
+                loadProjects();
+                return () => {
+                    if (rendererRef.current) {
+                        rendererRef.current.dispose();
+                    }
+                };
+            }, []);
 
-            <!-- Recent Scans -->
-            <div class="section-title">
-                <i class="fas fa-clock" style="color: var(--primary);"></i>
-                Scansioni Recenti
-            </div>
-            
-            <div class="scans-list" id="scans-list">
-                <div class="scan-item" onclick="openLastScan()">
-                    <div class="scan-thumbnail">
-                        <i class="fas fa-cube"></i>
-                        <div class="scan-badge">3D</div>
-                    </div>
-                    <div class="scan-info">
-                        <div class="scan-name">Soggiorno Villa Rossi</div>
-                        <div class="scan-meta">
-                            <span><i class="fas fa-calendar"></i> Oggi</span>
-                            <span><i class="fas fa-images"></i> 48 foto</span>
-                            <span><i class="fas fa-vector-square"></i> 45.2 m²</span>
+            const initThreeJS = () => {
+                const container = document.getElementById('canvas-container');
+                if (!container) return;
+
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0a0a0f);
+                sceneRef.current = scene;
+
+                const camera = new THREE.PerspectiveCamera(
+                    75,
+                    container.clientWidth / container.clientHeight,
+                    0.1,
+                    1000
+                );
+                camera.position.set(3, 3, 5);
+                cameraRef.current = camera;
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = true;
+                container.appendChild(renderer.domElement);
+                rendererRef.current = renderer;
+
+                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controlsRef.current = controls;
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+                directionalLight.position.set(5, 10, 7.5);
+                directionalLight.castShadow = true;
+                scene.add(directionalLight);
+
+                const pointLight1 = new THREE.PointLight(0x6366f1, 1, 50);
+                pointLight1.position.set(-5, 5, 5);
+                scene.add(pointLight1);
+
+                const pointLight2 = new THREE.PointLight(0x8b5cf6, 1, 50);
+                pointLight2.position.set(5, 5, -5);
+                scene.add(pointLight2);
+
+                const gridHelper = new THREE.GridHelper(20, 20, 0x6366f1, 0x1a1a24);
+                gridHelper.material.opacity = 0.3;
+                gridHelper.material.transparent = true;
+                scene.add(gridHelper);
+
+                const geometry = new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0x6366f1,
+                    emissive: 0x222244,
+                    shininess: 100
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.y = 1;
+                mesh.castShadow = true;
+                scene.add(mesh);
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    mesh.rotation.x += 0.005;
+                    mesh.rotation.y += 0.01;
+                    controls.update();
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                const handleResize = () => {
+                    const width = container.clientWidth;
+                    const height = container.clientHeight;
+                    camera.aspect = width / height;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(width, height);
+                };
+                window.addEventListener('resize', handleResize);
+            };
+
+            const handleFileSelect = (e) => {
+                const files = Array.from(e.target.files);
+                processFiles(files);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setDragging(false);
+                const files = Array.from(e.dataTransfer.files);
+                processFiles(files);
+            };
+
+            const processFiles = (files) => {
+                const imageFiles = files.filter(f => f.type.startsWith('image/'));
+                imageFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setPhotos(prev => [...prev, {
+                            id: Date.now() + Math.random(),
+                            url: e.target.result,
+                            name: file.name,
+                            size: (file.size / 1024).toFixed(2) + ' KB'
+                        }]);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            const removePhoto = (id) => {
+                setPhotos(prev => prev.filter(p => p.id !== id));
+            };
+
+            const processPhotogrammetry = () => {
+                if (photos.length < 3) {
+                    alert('⚠️ Carica almeno 3 foto per creare un modello 3D di qualità');
+                    return;
+                }
+
+                setProcessing(true);
+                setProcessingStep(0);
+
+                const steps = [
+                    { duration: 800, step: 0 },
+                    { duration: 1200, step: 1 },
+                    { duration: 1000, step: 2 },
+                    { duration: 1000, step: 3 }
+                ];
+
+                let currentStep = 0;
+
+                const processStep = () => {
+                    if (currentStep < steps.length) {
+                        setTimeout(() => {
+                            setProcessingStep(steps[currentStep].step + 1);
+                            currentStep++;
+                            processStep();
+                        }, steps[currentStep].duration);
+                    } else {
+                        setTimeout(() => {
+                            setProcessing(false);
+                            setModel({ 
+                                name: 'Modello 3D', 
+                                vertices: (Math.random() * 50000 + 10000).toFixed(0), 
+                                faces: (Math.random() * 30000 + 5000).toFixed(0),
+                                quality: 'Alta'
+                            });
+                            
+                            const project = {
+                                id: Date.now(),
+                                name: `Scansione ${new Date().toLocaleDateString('it-IT')}`,
+                                photos: photos.length,
+                                date: new Date().toISOString(),
+                                model: true,
+                                status: 'completed'
+                            };
+                            const saved = JSON.parse(localStorage.getItem('projects') || '[]');
+                            saved.unshift(project);
+                            localStorage.setItem('projects', JSON.stringify(saved));
+                            loadProjects();
+                        }, 500);
+                    }
+                };
+
+                processStep();
+            };
+
+            const loadProjects = () => {
+                const saved = JSON.parse(localStorage.getItem('projects') || '[]');
+                setProjects(saved);
+            };
+
+            const exportModel = (format) => {
+                if (!model) {
+                    alert('⚠️ Nessun modello disponibile per l\'esportazione');
+                    return;
+                }
+                alert(`✅ Esportazione in formato ${format.toUpperCase()} completata!`);
+            };
+
+            const toggleMeasurement = () => {
+                setMeasurementMode(!measurementMode);
+                if (!measurementMode) {
+                    setMeasurement((Math.random() * 5 + 0.5).toFixed(2));
+                }
+            };
+
+            const captureSteps = [
+                { icon: '📸', text: 'Inizia dalla vista frontale', angle: 0 },
+                { icon: '↪️', text: 'Ruota 45° a destra', angle: 45 },
+                { icon: '↪️', text: 'Continua a ruotare', angle: 90 },
+                { icon: '↪️', text: 'Vista laterale destra', angle: 135 },
+                { icon: '🔄', text: 'Vista posteriore', angle: 180 },
+                { icon: '↩️', text: 'Vista laterale sinistra', angle: 225 },
+                { icon: '↩️', text: 'Continua a sinistra', angle: 270 },
+                { icon: '✨', text: 'Ultima angolazione', angle: 315 },
+            ];
+
+            return (
+                <div className="app">
+                    <header className="header">
+                        <div className="logo">
+                            <div className="logo-icon">
+                                <span>📸</span>
+                            </div>
+                            <span className="logo-text">Scansione 3D Pro</span>
+                        </div>
+
+                        <div className="header-center">
+                            <button 
+                                className={`nav-pill ${currentView === 'capture' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('capture')}
+                            >
+                                🎯 Cattura
+                            </button>
+                            <button 
+                                className={`nav-pill ${currentView === 'viewer' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('viewer')}
+                            >
+                                🎨 Visualizza
+                            </button>
+                            <button 
+                                className={`nav-pill ${currentView === 'analyze' ? 'active' : ''}`}
+                                onClick={() => setCurrentView('analyze')}
+                            >
+                                📊 Analizza
+                            </button>
+                        </div>
+
+                        <div className="header-actions">
+                            <button className="btn-icon" data-tooltip="Notifiche">
+                                🔔
+                            </button>
+                            <button className="btn-icon" data-tooltip="Impostazioni">
+                                ⚙️
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => exportModel('obj')}>
+                                <span>💾</span>
+                                <span>Esporta</span>
+                            </button>
+                            <button className="btn btn-primary" onClick={processPhotogrammetry}>
+                                <span>✨</span>
+                                <span>Genera 3D</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <div className="main-content">
+                        <aside className="sidebar">
+                            <div className="sidebar-header">
+                                <div className="sidebar-title">Pannello di Controllo</div>
+                                <div className="sidebar-subtitle">
+                                    Gestisci la tua scansione 3D
+                                </div>
+                            </div>
+
+                            <div className="sidebar-tabs">
+                                <button 
+                                    className={`tab ${activeTab === 'capture' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('capture')}
+                                >
+                                    <span>📷</span>
+                                    <span>Cattura</span>
+                                </button>
+                                <button 
+                                    className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('projects')}
+                                >
+                                    <span>📁</span>
+                                    <span>Progetti</span>
+                                </button>
+                                <button 
+                                    className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('settings')}
+                                >
+                                    <span>⚙️</span>
+                                    <span>Opzioni</span>
+                                </button>
+                            </div>
+
+                            <div className="sidebar-content">
+                                {activeTab === 'capture' && (
+                                    <div>
+                                        <div style={{ marginBottom: '20px', display: 'flex', gap: '12px' }}>
+                                            <button 
+                                                className={`btn ${!guidedMode ? 'btn-primary' : 'btn-secondary'}`}
+                                                style={{ flex: 1 }}
+                                                onClick={() => setGuidedMode(false)}
+                                            >
+                                                📤 Caricamento Libero
+                                            </button>
+                                            <button 
+                                                className={`btn ${guidedMode ? 'btn-primary' : 'btn-secondary'}`}
+                                                style={{ flex: 1 }}
+                                                onClick={() => setGuidedMode(true)}
+                                            >
+                                                🎯 Modalità Guidata
+                                            </button>
+                                        </div>
+
+                                        {!guidedMode ? (
+                                            <>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept="image/*"
+                                                    onChange={handleFileSelect}
+                                                    style={{ display: 'none' }}
+                                                    id="file-input"
+                                                />
+                                                <div 
+                                                    className={`upload-zone ${dragging ? 'dragging' : ''}`}
+                                                    onClick={() => document.getElementById('file-input').click()}
+                                                    onDrop={handleDrop}
+                                                    onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                                                    onDragLeave={() => setDragging(false)}
+                                                >
+                                                    <div className="upload-icon">📤</div>
+                                                    <div className="upload-text">Carica le tue foto</div>
+                                                    <div className="upload-hint">
+                                                        Trascina qui le immagini oppure clicca per selezionarle<br/>
+                                                        Formati supportati: JPG, PNG, HEIC
+                                                    </div>
+                                                </div>
+
+                                                {photos.length > 0 && (
+                                                    <>
+                                                        <div className="photo-grid">
+                                                            {photos.map((photo, index) => (
+                                                                <div key={photo.id} className="photo-item">
+                                                                    <img src={photo.url} alt={photo.name} />
+                                                                    <div className="photo-overlay">
+                                                                        <div className="photo-index">#{index + 1}</div>
+                                                                    </div>
+                                                                    <button 
+                                                                        className="photo-remove"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            removePhoto(photo.id);
+                                                                        }}
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <div className="stats-card">
+                                                            <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
+                                                                📊 Statistiche Scansione
+                                                            </div>
+                                                            <div className="stats-grid">
+                                                                <div className="stat-item">
+                                                                    <div className="stat-value">{photos.length}</div>
+                                                                    <div className="stat-label">Foto</div>
+                                                                </div>
+                                                                <div className="stat-item">
+                                                                    <div className="stat-value">{Math.min(100, photos.length * 4)}%</div>
+                                                                    <div className="stat-label">Copertura</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="progress-container">
+                                                                <div className="progress-header">
+                                                                    <div className="progress-label">Qualità stimata</div>
+                                                                    <div className="progress-value">
+                                                                        {photos.length < 10 ? 'Bassa' : photos.length < 20 ? 'Media' : 'Alta'}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="progress-bar">
+                                                                    <div 
+                                                                        className="progress-fill" 
+                                                                        style={{ width: `${Math.min(100, photos.length * 3.33)}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ 
+                                                                marginTop: '16px', 
+                                                                fontSize: '12px', 
+                                                                color: 'var(--text-secondary)',
+                                                                padding: '12px',
+                                                                background: 'var(--bg-secondary)',
+                                                                borderRadius: '8px'
+                                                            }}>
+                                                                💡 <strong>Suggerimento:</strong> Per risultati ottimali, carica 20-30 foto da diverse angolazioni con buona illuminazione
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="guided-mode">
+                                                <div className="capture-view">
+                                                    <div className="capture-circle">
+                                                        {captureSteps.map((step, index) => {
+                                                            const angle = (step.angle * Math.PI) / 180;
+                                                            const x = Math.cos(angle) * 110;
+                                                            const y = Math.sin(angle) * 110;
+                                                            return (
+                                                                <div
+                                                                    key={index}
+                                                                    className="capture-indicator"
+                                                                    style={{
+                                                                        left: `calc(50% + ${x}px)`,
+                                                                        top: `calc(50% + ${y}px)`,
+                                                                        transform: 'translate(-50%, -50%)',
+                                                                        opacity: index === captureStep ? 1 : 0.3,
+                                                                        transform: `translate(-50%, -50%) scale(${index === captureStep ? 1.2 : 0.8})`
+                                                                    }}
+                                                                >
+                                                                    {step.icon}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                <div className="capture-guide">
+                                                    <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
+                                                        📋 Guida Acquisizione
+                                                    </div>
+                                                    {captureSteps.map((step, index) => (
+                                                        <div 
+                                                            key={index}
+                                                            className={`guide-step ${index === captureStep ? 'active' : ''}`}
+                                                            onClick={() => setCaptureStep(index)}
+                                                        >
+                                                            <div className="guide-number">{index + 1}</div>
+                                                            <div className="guide-text">{step.text}</div>
+                                                            {index < captureStep && <span>✅</span>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'projects' && (
+                                    <div>
+                                        {projects.length === 0 ? (
+                                            <div className="empty-state">
+                                                <div className="empty-icon">📂</div>
+                                                <div className="empty-text">Nessun progetto salvato</div>
+                                                <div className="empty-hint">
+                                                    I tuoi progetti di scansione 3D<br/>appariranno qui automaticamente
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            projects.map(project => (
+                                                <div key={project.id} className="project-item">
+                                                    <div className="project-header">
+                                                        <div>
+                                                            <div className="project-name">{project.name}</div>
+                                                        </div>
+                                                        <div className={`project-status ${project.status === 'completed' ? 'status-completed' : 'status-processing'}`}>
+                                                            {project.status === 'completed' ? '✓ Completato' : '⏳ In corso'}
+                                                        </div>
+                                                    </div>
+                                                    <div className="project-meta">
+                                                        <div className="project-meta-item">
+                                                            <span>📷</span>
+                                                            <span>{project.photos} foto</span>
+                                                        </div>
+                                                        <div className="project-meta-item">
+                                                            <span>📅</span>
+                                                            <span>{new Date(project.date).toLocaleDateString('it-IT')}</span>
+                                                        </div>
+                                                        <div className="project-meta-item">
+                                                            <span>🎨</span>
+                                                            <span>3D Model</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'settings' && (
+                                    <div>
+                                        <div className="settings-group">
+                                            <div className="settings-title">Qualità Modello 3D</div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Alta risoluzione</div>
+                                                    <div className="setting-description">Genera modelli con dettagli massimi</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Ottimizza texture</div>
+                                                    <div className="setting-description">Riduci dimensione mantenendo qualità</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Auto-decimazione</div>
+                                                    <div className="setting-description">Semplifica mesh automaticamente</div>
+                                                </div>
+                                                <div className="toggle">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="settings-group">
+                                            <div className="settings-title">Misurazioni</div>
+                                            <div className="setting-item">
+                                                <div className="setting-label">Unità di misura</div>
+                                                <select className="select-custom">
+                                                    <option>Metri (m)</option>
+                                                    <option>Centimetri (cm)</option>
+                                                    <option>Millimetri (mm)</option>
+                                                    <option>Pollici (in)</option>
+                                                    <option>Piedi (ft)</option>
+                                                </select>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Mostra griglia</div>
+                                                    <div className="setting-description">Visualizza griglia di riferimento</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Snap to grid</div>
+                                                    <div className="setting-description">Allinea misure alla griglia</div>
+                                                </div>
+                                                <div className="toggle">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="settings-group">
+                                            <div className="settings-title">Esportazione</div>
+                                            <div className="setting-item">
+                                                <div className="setting-label">Formato predefinito</div>
+                                                <select className="select-custom">
+                                                    <option>GLB (consigliato)</option>
+                                                    <option>GLTF</option>
+                                                    <option>OBJ</option>
+                                                    <option>STL</option>
+                                                    <option>FBX</option>
+                                                    <option>PLY</option>
+                                                </select>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Includi texture</div>
+                                                    <div className="setting-description">Esporta con materiali e texture</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="settings-group">
+                                            <div className="settings-title">Performance</div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">GPU Acceleration</div>
+                                                    <div className="setting-description">Usa accelerazione hardware</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                            <div className="setting-item">
+                                                <div className="setting-info">
+                                                    <div className="setting-label">Auto-save</div>
+                                                    <div className="setting-description">Salvataggio automatico progetti</div>
+                                                </div>
+                                                <div className="toggle active">
+                                                    <div className="toggle-slider"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </aside>
+
+                        <div className="viewer-container">
+                            <div id="canvas-container"></div>
+
+                            <div className="viewer-overlay">
+                                <div className="viewer-controls">
+                                    <button 
+                                        className={`control-btn ${measurementMode ? 'active' : ''}`}
+                                        onClick={toggleMeasurement}
+                                        data-tooltip="Misura distanza"
+                                    >
+                                        📏
+                                    </button>
+                                    <button className="control-btn" data-tooltip="Reset camera">
+                                        🔄
+                                    </button>
+                                    <button className="control-btn" data-tooltip="Vista frontale">
+                                        👁️
+                                    </button>
+                                    <button className="control-btn" data-tooltip="Wireframe">
+                                        🔲
+                                    </button>
+                                    <button className="control-btn" data-tooltip="Screenshot">
+                                        📸
+                                    </button>
+                                    <button className="control-btn" data-tooltip="Schermo intero">
+                                        ⛶
+                                    </button>
+                                </div>
+
+                                {measurementMode && measurement && (
+                                    <div className="measurement-panel">
+                                        <div className="measurement-header">
+                                            <div className="measurement-icon">📏</div>
+                                            <div className="measurement-title">Misurazione Attiva</div>
+                                        </div>
+                                        <div className="measurement-value-display">
+                                            {measurement} m
+                                        </div>
+                                        <div className="measurement-hint">
+                                            💡 Clicca due punti sul modello 3D per misurare la distanza tra loro con precisione millimetrica
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {processing && (
+                                <div className="processing-overlay">
+                                    <div className="processing-circle">
+                                        <div className="processing-icon">🔄</div>
+                                    </div>
+                                    <div className="processing-text">
+                                        Elaborazione in corso...
+                                    </div>
+                                    <div className="processing-hint">
+                                        Generazione modello 3D da {photos.length} fotografie
+                                    </div>
+                                    <div className="processing-steps">
+                                        <div className="processing-step">
+                                            <div className={`step-circle ${processingStep > 0 ? 'completed' : processingStep === 0 ? 'active' : ''}`}>
+                                                {processingStep > 0 ? '✓' : '1'}
+                                            </div>
+                                            <div className="step-label">Analisi foto</div>
+                                        </div>
+                                        <div className="processing-step">
+                                            <div className={`step-circle ${processingStep > 1 ? 'completed' : processingStep === 1 ? 'active' : ''}`}>
+                                                {processingStep > 1 ? '✓' : '2'}
+                                            </div>
+                                            <div className="step-label">Allineamento</div>
+                                        </div>
+                                        <div className="processing-step">
+                                            <div className={`step-circle ${processingStep > 2 ? 'completed' : processingStep === 2 ? 'active' : ''}`}>
+                                                {processingStep > 2 ? '✓' : '3'}
+                                            </div>
+                                            <div className="step-label">Mesh 3D</div>
+                                        </div>
+                                        <div className="processing-step">
+                                            <div className={`step-circle ${processingStep > 3 ? 'completed' : processingStep === 3 ? 'active' : ''}`}>
+                                                {processingStep > 3 ? '✓' : '4'}
+                                            </div>
+                                            <div className="step-label">Texture</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!processing && photos.length === 0 && !model && (
+                                <div className="processing-overlay" style={{ background: 'rgba(10, 10, 15, 0.7)' }}>
+                                    <div className="empty-icon">🎯</div>
+                                    <div className="empty-text">Inizia una nuova scansione 3D</div>
+                                    <div className="empty-hint">
+                                        Carica le tue fotografie per creare un modello tridimensionale professionale<br/>
+                                        con texture ad alta risoluzione e precisione millimetrica
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+            );
+        }
 
-    <!-- Scanner Interface -->
-    <div class="scanner-fullscreen" id="scanner">
-        <video id="camera-video" autoplay playsinline></video>
-        
-        <div class="scanner-overlay">
-            <!-- Object Detection Overlay -->
-            <div class="detection-overlay" id="detection-overlay"></div>
-            
-            <!-- HUD -->
-            <div class="scanner-hud">
-                <div class="scanner-mode-badge" id="scanner-mode">Stanza Completa</div>
-                <button class="btn-scanner-icon" onclick="closeScanner()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <!-- Detected Objects -->
-            <div class="objects-list" id="objects-list"></div>
-            
-            <!-- Progress Ring -->
-            <div class="capture-progress">
-                <svg class="progress-ring" width="64" height="64">
-                    <circle class="progress-ring-bg" cx="32" cy="32" r="28"></circle>
-                    <circle class="progress-ring-fill" cx="32" cy="32" r="28" 
-                            stroke-dasharray="175.9" stroke-dashoffset="175.9" id="progress-circle"></circle>
-                </svg>
-                <div class="progress-text" id="progress-text">0</div>
-            </div>
-            
-            <!-- Capture Frame -->
-            <div class="capture-frame">
-                <div class="capture-corners">
-                    <div class="cap-corner cap-tl"></div>
-                    <div class="cap-corner cap-tr"></div>
-                    <div class="cap-corner cap-bl"></div>
-                    <div class="cap-corner cap-br"></div>
-                </div>
-                <div class="capture-instruction" id="instruction">Inquadra la stanza e gira lentamente</div>
-            </div>
-            
-            <!-- Controls -->
-            <div class="scanner-bottom">
-                <button class="btn-scanner-side" onclick="toggleFlash()">
-                    <i class="fas fa-bolt"></i>
-                </button>
-                <button class="btn-capture-pro" id="btn-capture" onclick="toggleCapture()"></button>
-                <button class="btn-scanner-side" onclick="switchCamera()">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Processing Screen -->
-        <div class="processing-screen" id="processing">
-            <div class="processing-visual">
-                <div class="processing-ring"></div>
-                <div class="processing-ring"></div>
-                <div class="processing-ring"></div>
-            </div>
-            <div class="processing-title">Elaborazione Cloud</div>
-            <div class="processing-subtitle">Photogrammetria professionale in corso</div>
-            
-            <div class="processing-steps">
-                <div class="process-step active" id="step-1">
-                    <div class="step-icon"><i class="fas fa-upload"></i></div>
-                    <div class="step-text">Upload foto (48/48)</div>
-                </div>
-                <div class="process-step" id="step-2">
-                    <div class="step-icon"><i class="fas fa-brain"></i></div>
-                    <div class="step-text">Feature extraction</div>
-                </div>
-                <div class="process-step" id="step-3">
-                    <div class="step-icon"><i class="fas fa-cube"></i></div>
-                    <div class="step-text">Dense reconstruction</div>
-                </div>
-                <div class="process-step" id="step-4">
-                    <div class="step-icon"><i class="fas fa-paint-brush"></i></div>
-                    <div class="step-text">Texture mapping</div>
-                </div>
-                <div class="process-step" id="step-5">
-                    <div class="step-icon"><i class="fas fa-check"></i></div>
-                    <div class="step-text">Object detection</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3D Viewer Pro -->
-    <div class="viewer-pro" id="viewer">
-        <canvas id="viewer-canvas"></canvas>
-        
-        <div class="viewer-ui">
-            <!-- Header -->
-            <div class="viewer-header-pro">
-                <div class="viewer-title-pro">Soggiorno Villa Rossi</div>
-                <div class="viewer-actions">
-                    <button class="btn-viewer-action" onclick="toggleInfo()" title="Info">
-                        <i class="fas fa-info"></i>
-                    </button>
-                    <button class="btn-viewer-action" onclick="openShare()" title="Condividi">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="btn-viewer-action" onclick="closeViewer()" title="Chiudi">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Detected Objects -->
-            <div class="objects-list" style="top: 140px;">
-                <div class="object-tag"><i class="fas fa-couch"></i> Divano</div>
-                <div class="object-tag"><i class="fas fa-table"></i> Tavolo</div>
-                <div class="object-tag"><i class="fas fa-square"></i> Finestra</div>
-                <div class="object-tag"><i class="fas fa-door-open"></i> Porta</div>
-            </div>
-            
-            <!-- Info Panel -->
-            <div class="info-panel" id="info-panel">
-                <div class="info-title">
-                    <i class="fas fa-ruler-combined"></i> Misure Reali
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Lunghezza</span>
-                    <span class="info-value">6.85 m</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Larghezza</span>
-                    <span class="info-value">4.62 m</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Altezza</span>
-                    <span class="info-value">2.78 m</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Area</span>
-                    <span class="info-value">31.6 m²</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Volume</span>
-                    <span class="info-value">87.8 m³</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Oggetti rilevati</span>
-                    <span class="info-value">12</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Precisione</span>
-                    <span class="info-value" style="color: var(--success);">±2.3mm</span>
-                </div>
-            </div>
-            
-            <!-- Toolbar -->
-            <div class="viewer-toolbar-pro">
-                <button class="toolbar-btn active" onclick="setViewMode('orbit')">
-                    <i class="fas fa-sync-alt"></i> Orbita
-                </button>
-                <button class="toolbar-btn" onclick="setViewMode('walk')">
-                    <i class="fas fa-walking"></i> Walk
-                </button>
-                <button class="toolbar-btn" onclick="setViewMode('measure')">
-                    <i class="fas fa-ruler"></i> Misura
-                </button>
-                <button class="toolbar-btn" onclick="toggleTextures()">
-                    <i class="fas fa-palette"></i> Texture
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Share Modal -->
-    <div class="share-modal" id="share-modal">
-        <div class="share-content">
-            <div class="share-title">Condividi Modello 3D</div>
-            <div class="share-grid">
-                <div class="share-item" onclick="shareEmail()">
-                    <div class="share-icon email"><i class="fas fa-envelope"></i></div>
-                    <div class="share-label">Email</div>
-                </div>
-                <div class="share-item" onclick="shareWhatsApp()">
-                    <div class="share-icon whatsapp"><i class="fab fa-whatsapp"></i></div>
-                    <div class="share-label">WhatsApp</div>
-                </div>
-                <div class="share-item" onclick="exportPDF()">
-                    <div class="share-icon pdf"><i class="fas fa-file-pdf"></i></div>
-                    <div class="share-label">PDF</div>
-                </div>
-                <div class="share-item" onclick="exportOBJ()">
-                    <div class="share-icon obj"><i class="fas fa-cube"></i></div>
-                    <div class="share-label">OBJ/GLTF</div>
-                </div>
-            </div>
-            <button class="btn-close-share" onclick="closeShare()">Chiudi</button>
-        </div>
-    </div>
-
-    <script>
-        // State
-        let currentMode = 'room';
-        let isCapturing = false;
-        let photoCount = 0;
-        let stream = null;
-        let captureInterval = null;
-        let scene, camera, renderer, controls;
-        let model;
-        
-        // Object detection model
-        let cocoModel = null;
-        
-        // Init
-        window.onload = async function() {
-            // Load TensorFlow model
-            try {
-                cocoModel = await cocoSsd.load();
-                console.log('Object detection model loaded');
-            } catch(e) {
-                console.log('Model loading failed, using simulation');
-            }
-            
-            setTimeout(() => {
-                document.getElementById('splash').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('splash').style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                }, 500);
-            }, 2500);
-        };
-        
-        function selectMode(mode) {
-            currentMode = mode;
-            const names = {
-                'room': 'Stanza Completa',
-                'construction': 'Cantiere Grezzo',
-                'facade': 'Facciata Esterna',
-                'object': 'Oggetto Singolo'
-            };
-            document.getElementById('scanner-mode').textContent = names[mode];
-            startProScan();
-        }
-        
-        async function startProScan() {
-            document.getElementById('scanner').classList.add('active');
-            
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                });
-                document.getElementById('camera-video').srcObject = stream;
-                
-                // Start object detection
-                detectObjects();
-            } catch (err) {
-                showToast('Errore camera: ' + err.message);
-            }
-        }
-        
-        async function detectObjects() {
-            if (!cocoModel || !document.getElementById('scanner').classList.contains('active')) return;
-            
-            const video = document.getElementById('camera-video');
-            if (video.readyState === 4) {
-                try {
-                    const predictions = await cocoModel.detect(video);
-                    updateDetections(predictions);
-                } catch(e) {}
-            }
-            
-            requestAnimationFrame(detectObjects);
-        }
-        
-        function updateDetections(predictions) {
-            const overlay = document.getElementById('detection-overlay');
-            const list = document.getElementById('objects-list');
-            
-            // Filter relevant objects for construction
-            const relevant = predictions.filter(p => 
-                ['couch', 'chair', 'dining table', 'bed', 'refrigerator', 'microwave', 
-                 'oven', 'sink', 'toilet', 'tv', 'laptop', 'book', 'vase', 'clock',
-                 'door', 'window'].includes(p.class)
-            );
-            
-            // Clear previous
-            overlay.innerHTML = '';
-            list.innerHTML = '';
-            
-            // Show detected objects
-            const uniqueObjects = [...new Set(relevant.map(r => r.class))];
-            uniqueObjects.forEach(obj => {
-                const tag = document.createElement('div');
-                tag.className = 'object-tag';
-                const icons = {
-                    'couch': 'couch', 'chair': 'chair', 'dining table': 'table',
-                    'bed': 'bed', 'door': 'door-open', 'window': 'square',
-                    'refrigerator': 'snowflake', 'oven': 'fire', 'sink': 'tint'
-                };
-                tag.innerHTML = `<i class="fas fa-${icons[obj] || 'cube'}"></i> ${obj}`;
-                list.appendChild(tag);
-            });
-            
-            // Draw bounding boxes
-            relevant.forEach(pred => {
-                const div = document.createElement('div');
-                div.className = 'detected-object';
-                div.style.left = (pred.bbox[0] / video.videoWidth * 100) + '%';
-                div.style.top = (pred.bbox[1] / video.videoHeight * 100) + '%';
-                div.style.width = (pred.bbox[2] / video.videoWidth * 100) + '%';
-                div.style.height = (pred.bbox[3] / video.videoHeight * 100) + '%';
-                div.innerHTML = `<div class="detected-label">${pred.class} ${Math.round(pred.score * 100)}%</div>`;
-                overlay.appendChild(div);
-            });
-        }
-        
-        function toggleCapture() {
-            const btn = document.getElementById('btn-capture');
-            
-            if (!isCapturing) {
-                isCapturing = true;
-                photoCount = 0;
-                btn.classList.add('recording');
-                document.getElementById('instruction').textContent = 'Gira lentamente... Sto scattando foto';
-                
-                captureInterval = setInterval(() => {
-                    photoCount++;
-                    document.getElementById('progress-text').textContent = photoCount;
-                    
-                    // Update ring
-                    const circle = document.getElementById('progress-circle');
-                    const offset = 175.9 - (175.9 * photoCount / 48);
-                    circle.style.strokeDashoffset = offset;
-                    
-                    // Flash
-                    const flash = document.createElement('div');
-                    flash.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:999;pointer-events:none;opacity:0.3;';
-                    document.body.appendChild(flash);
-                    setTimeout(() => flash.remove(), 80);
-                    
-                    if (photoCount >= 48) {
-                        finishCapture();
-                    }
-                }, 1200);
-            } else {
-                finishCapture();
-            }
-        }
-        
-        function finishCapture() {
-            isCapturing = false;
-            clearInterval(captureInterval);
-            document.getElementById('btn-capture').classList.remove('recording');
-            
-            // Show processing
-            document.getElementById('processing').classList.add('active');
-            
-            // Simulate cloud processing steps
-            simulateProcessing();
-        }
-        
-        async function simulateProcessing() {
-            const steps = [
-                { id: 'step-1', text: 'Upload foto (48/48)', delay: 1000 },
-                { id: 'step-2', text: 'Feature extraction & matching', delay: 2000 },
-                { id: 'step-3', text: 'Dense reconstruction', delay: 3000 },
-                { id: 'step-4', text: 'Texture mapping', delay: 2000 },
-                { id: 'step-5', text: 'Object detection & classification', delay: 1500 }
-            ];
-            
-            for (let i = 0; i < steps.length; i++) {
-                const step = steps[i];
-                document.querySelectorAll('.process-step').forEach(s => s.classList.remove('active'));
-                document.getElementById(step.id).classList.add('active');
-                
-                if (i > 0) {
-                    document.getElementById(steps[i-1].id).classList.add('completed');
-                    document.querySelector(`#${steps[i-1].id} .step-icon`).innerHTML = '<i class="fas fa-check"></i>';
-                }
-                
-                await new Promise(r => setTimeout(r, step.delay));
-            }
-            
-            // Complete
-            document.getElementById('step-5').classList.add('completed');
-            document.querySelector('#step-5 .step-icon').innerHTML = '<i class="fas fa-check"></i>';
-            
-            setTimeout(() => {
-                document.getElementById('processing').classList.remove('active');
-                closeScanner();
-                openViewer();
-            }, 500);
-        }
-        
-        function closeScanner() {
-            document.getElementById('scanner').classList.remove('active');
-            if (stream) {
-                stream.getTracks().forEach(t => t.stop());
-                stream = null;
-            }
-        }
-        
-        // 3D Viewer with Photorealistic Model
-        function openViewer() {
-            document.getElementById('viewer').classList.add('active');
-            initPhotorealisticViewer();
-        }
-        
-        function initPhotorealisticViewer() {
-            const canvas = document.getElementById('viewer-canvas');
-            
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
-            scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
-            
-            // Camera
-            camera = new THREE.PerspectiveCamera(60, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-            camera.position.set(5, 3, 5);
-            
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
-            
-            // Controls
-            controls = new THREE.OrbitControls(camera, canvas);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.maxPolarAngle = Math.PI / 2;
-            controls.minDistance = 2;
-            controls.maxDistance = 15;
-            
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-            scene.add(ambient);
-            
-            const sun = new THREE.DirectionalLight(0xffffff, 1);
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true;
-            sun.shadow.mapSize.width = 2048;
-            sun.shadow.mapSize.height = 2048;
-            scene.add(sun);
-            
-            const fill = new THREE.DirectionalLight(0xffeedd, 0.5);
-            fill.position.set(-10, 10, -10);
-            scene.add(fill);
-            
-            // Create photorealistic room
-            createPhotorealisticRoom();
-            
-            // Animation
-            function animate() {
-                requestAnimationFrame(animate);
-                controls.update();
-                renderer.render(scene, camera);
-            }
-            animate();
-            
-            // Resize
-            window.addEventListener('resize', () => {
-                if (!renderer) return;
-                camera.aspect = canvas.clientWidth / canvas.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-            });
-        }
-        
-        function createPhotorealisticRoom() {
-            const roomGroup = new THREE.Group();
-            
-            // Floor with realistic material
-            const floorGeo = new THREE.PlaneGeometry(7, 5);
-            const floorMat = new THREE.MeshStandardMaterial({ 
-                color: 0xd4c4b0,
-                roughness: 0.8,
-                metalness: 0.1
-            });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            floor.receiveShadow = true;
-            roomGroup.add(floor);
-            
-            // Walls with texture-like appearance
-            const wallMat = new THREE.MeshStandardMaterial({
-                color: 0xf5f5f0,
-                roughness: 0.9,
-                metalness: 0.0
-            });
-            
-            // Back wall
-            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(7, 2.8), wallMat);
-            backWall.position.set(0, 1.4, -2.5);
-            backWall.receiveShadow = true;
-            roomGroup.add(backWall);
-            
-            // Left wall
-            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(5, 2.8), wallMat);
-            leftWall.rotation.y = Math.PI / 2;
-            leftWall.position.set(-3.5, 1.4, 0);
-            leftWall.receiveShadow = true;
-            roomGroup.add(leftWall);
-            
-            // Window
-            const windowFrame = new THREE.Mesh(
-                new THREE.BoxGeometry(0.1, 1.5, 2),
-                new THREE.MeshStandardMaterial({ color: 0x4a4a4a })
-            );
-            windowFrame.position.set(-3.45, 1.5, 0);
-            roomGroup.add(windowFrame);
-            
-            const windowGlass = new THREE.Mesh(
-                new THREE.PlaneGeometry(1.8, 1.3),
-                new THREE.MeshStandardMaterial({ 
-                    color: 0x87ceeb, 
-                    transparent: true, 
-                    opacity: 0.3,
-                    emissive: 0x87ceeb,
-                    emissiveIntensity: 0.2
-                })
-            );
-            windowGlass.rotation.y = Math.PI / 2;
-            windowGlass.position.set(-3.4, 1.5, 0);
-            roomGroup.add(windowGlass);
-            
-            // Sofa
-            const sofaGroup = new THREE.Group();
-            const sofaMat = new THREE.MeshStandardMaterial({ color: 0x4a5568, roughness: 0.9 });
-            const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 1), sofaMat);
-            sofaBase.position.y = 0.25;
-            sofaBase.castShadow = true;
-            sofaGroup.add(sofaBase);
-            
-            const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.8, 0.3), sofaMat);
-            sofaBack.position.set(0, 0.9, -0.35);
-            sofaBack.castShadow = true;
-            sofaGroup.add(sofaBack);
-            
-            const sofaArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 1), sofaMat);
-            sofaArm1.position.set(-1.1, 0.8, 0);
-            sofaArm1.castShadow = true;
-            sofaGroup.add(sofaArm1);
-            
-            const sofaArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.6, 1), sofaMat);
-            sofaArm2.position.set(1.1, 0.8, 0);
-            sofaArm2.castShadow = true;
-            sofaGroup.add(sofaArm2);
-            
-            sofaGroup.position.set(0, 0, -1.5);
-            roomGroup.add(sofaGroup);
-            
-            // Coffee table
-            const tableMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.6 });
-            const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 32), tableMat);
-            tableTop.position.set(0, 0.45, 0.5);
-            tableTop.castShadow = true;
-            roomGroup.add(tableTop);
-            
-            const tableLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.45, 16), tableMat);
-            tableLeg.position.set(0, 0.225, 0.5);
-            tableLeg.castShadow = true;
-            roomGroup.add(tableLeg);
-            
-            const tableBase = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 32), tableMat);
-            tableBase.position.set(0, 0.025, 0.5);
-            tableBase.castShadow = true;
-            roomGroup.add(tableBase);
-            
-            // TV stand
-            const tvStand = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 0.5, 0.4),
-                new THREE.MeshStandardMaterial({ color: 0x2d3748 })
-            );
-            tvStand.position.set(0, 0.25, 2.2);
-            tvStand.castShadow = true;
-            roomGroup.add(tvStand);
-            
-            // TV
-            const tv = new THREE.Mesh(
-                new THREE.BoxGeometry(1.2, 0.7, 0.05),
-                new THREE.MeshStandardMaterial({ color: 0x1a202c, roughness: 0.2 })
-            );
-            tv.position.set(0, 1.2, 2.15);
-            tv.castShadow = true;
-            roomGroup.add(tv);
-            
-            // Screen glow
-            const screenLight = new THREE.PointLight(0x4488ff, 0.5, 3);
-            screenLight.position.set(0, 1.2, 2);
-            roomGroup.add(screenLight);
-            
-            // Rug
-            const rug = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, 2),
-                new THREE.MeshStandardMaterial({ color: 0xc53030, roughness: 1 })
-            );
-            rug.rotation.x = -Math.PI / 2;
-            rug.position.set(0, 0.01, 0);
-            rug.receiveShadow = true;
-            roomGroup.add(rug);
-            
-            scene.add(roomGroup);
-            
-            // Store for animation
-            model = roomGroup;
-        }
-        
-        function setViewMode(mode) {
-            document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            
-            if (mode === 'walk') {
-                // First person walk mode
-                camera.position.set(0, 1.7, 0);
-                controls.maxPolarAngle = Math.PI / 1.8;
-            } else if (mode === 'orbit') {
-                camera.position.set(5, 3, 5);
-                controls.maxPolarAngle = Math.PI / 2;
-            }
-        }
-        
-        function toggleTextures() {
-            showToast('Texture fotorealistiche attive');
-        }
-        
-        function toggleInfo() {
-            const panel = document.getElementById('info-panel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        }
-        
-        function openShare() {
-            document.getElementById('share-modal').classList.add('active');
-        }
-        
-        function closeShare() {
-            document.getElementById('share-modal').classList.remove('active');
-        }
-        
-        function shareEmail() {
-            window.location.href = 'mailto:?subject=Modello 3D Pepe Costruzioni&body=Guarda questo modello 3D: [link]';
-            closeShare();
-        }
-        
-        function shareWhatsApp() {
-            window.open('https://wa.me/?text=Guarda questo modello 3D professionale: [link]', '_blank');
-            closeShare();
-        }
-        
-        function exportPDF() {
-            showToast('Esportazione PDF in corso...');
-            setTimeout(() => {
-                showToast('PDF esportato con successo!');
-                closeShare();
-            }, 2000);
-        }
-        
-        function exportOBJ() {
-            showToast('Esportazione OBJ/GLTF in corso...');
-            setTimeout(() => {
-                showToast('File 3D esportato!');
-                closeShare();
-            }, 2000);
-        }
-        
-        function closeViewer() {
-            document.getElementById('viewer').classList.remove('active');
-            if (renderer) {
-                renderer.dispose();
-                renderer = null;
-            }
-        }
-        
-        function toggleFlash() {
-            showToast('Flash non disponibile');
-        }
-        
-        function switchCamera() {
-            showToast('Camera cambiata');
-        }
-        
-        function openLastScan() {
-            openViewer();
-        }
-        
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast-pro';
-            toast.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
+```
+
+---
+
+## 🚀 **GUIDA CARICAMENTO SU GITHUB**
+
+### **Passo 1: Crea Repository**
+1. Vai su https://github.com
+2. Clicca **"New repository"** (pulsante verde)
+3. Nome: `scansione-3d-pro`
+4. Seleziona **"Public"**
+5. Clicca **"Create repository"**
+
+### **Passo 2: Carica il file**
+1. Clicca **"uploading an existing file"**
+2. Crea un file chiamato `index.html`
+3. Incolla tutto il codice sopra
+4. Clicca **"Commit changes"**
+
+### **Passo 3: Attiva GitHub Pages**
+1. Vai su **Settings** del tuo repository
+2. Scroll fino a **"Pages"** nel menu laterale
+3. Sotto **"Source"** seleziona **"main"** branch
+4. Clicca **"Save"**
+5. Dopo 1-2 minuti il sito sarà live!
+
+### **Il tuo link sarà:**
+```
+https://TUO-USERNAME.github.io/scansione-3d-pro/

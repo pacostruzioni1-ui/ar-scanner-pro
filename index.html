@@ -1158,6 +1158,33 @@
             font-size: 14px;
         }
 
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            width: 44px;
+            height: 44px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 89;
+        }
+
+        .mobile-overlay.show {
+            display: block;
+        }
+
         /* Responsive */
         @media (max-width: 1200px) {
             .sidebar {
@@ -1166,28 +1193,201 @@
         }
 
         @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: flex;
+            }
+
             .header {
-                padding: 16px 20px;
+                padding: 12px 16px;
             }
 
             .header-center {
                 display: none;
             }
 
+            .header-actions {
+                gap: 8px;
+            }
+
+            .header-actions .btn span:last-child,
+            .header-actions .btn-secondary {
+                display: none;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+
+            .btn-icon {
+                width: 40px;
+                height: 40px;
+            }
+
             .sidebar {
-                position: absolute;
+                position: fixed;
                 z-index: 90;
-                width: 100%;
+                width: 85%;
+                max-width: 360px;
+                height: 100vh;
                 transform: translateX(-100%);
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: var(--shadow-xl);
             }
 
             .sidebar.open {
                 transform: translateX(0);
             }
 
+            .sidebar-header {
+                padding: 20px;
+            }
+
+            .sidebar-title {
+                font-size: 16px;
+            }
+
+            .sidebar-subtitle {
+                font-size: 13px;
+            }
+
+            .sidebar-tabs {
+                padding: 12px 16px;
+            }
+
+            .tab {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .sidebar-content {
+                padding: 16px;
+            }
+
+            .upload-zone {
+                padding: 32px 16px;
+            }
+
+            .upload-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+            }
+
+            .upload-text {
+                font-size: 16px;
+            }
+
+            .upload-hint {
+                font-size: 13px;
+            }
+
             .photo-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .stats-card {
+                padding: 16px;
+            }
+
+            .viewer-controls {
+                top: 16px;
+                right: 16px;
+                gap: 8px;
+            }
+
+            .control-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+
+            .measurement-panel {
+                bottom: 16px;
+                left: 16px;
+                right: 16px;
+                padding: 16px;
+            }
+
+            .measurement-value-display {
+                font-size: 32px;
+            }
+
+            .processing-circle {
+                width: 100px;
+                height: 100px;
+            }
+
+            .processing-icon {
+                font-size: 40px;
+            }
+
+            .processing-text {
+                font-size: 20px;
+            }
+
+            .processing-steps {
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .capture-circle {
+                width: 200px;
+                height: 200px;
+            }
+
+            .capture-indicator {
+                width: 60px;
+                height: 60px;
+                font-size: 24px;
+            }
+
+            /* Mobile-specific empty state */
+            .empty-state {
+                padding: 40px 20px;
+            }
+
+            .empty-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 36px;
+            }
+
+            .empty-text {
+                font-size: 18px;
+            }
+
+            .empty-hint {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-text {
+                font-size: 16px;
+            }
+
+            .logo-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .header-actions .btn-icon:first-child {
+                display: none;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-grid {
+                gap: 12px;
+            }
+
+            .stat-value {
+                font-size: 24px;
             }
         }
 
@@ -1257,6 +1457,7 @@
             const [dragging, setDragging] = useState(false);
             const [guidedMode, setGuidedMode] = useState(false);
             const [captureStep, setCaptureStep] = useState(0);
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
             const canvasRef = useRef(null);
             const sceneRef = useRef(null);
@@ -1303,6 +1504,7 @@
                 controls.dampingFactor = 0.05;
                 controlsRef.current = controls;
 
+                // Lights
                 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
                 scene.add(ambientLight);
 
@@ -1319,11 +1521,13 @@
                 pointLight2.position.set(5, 5, -5);
                 scene.add(pointLight2);
 
+                // Grid
                 const gridHelper = new THREE.GridHelper(20, 20, 0x6366f1, 0x1a1a24);
                 gridHelper.material.opacity = 0.3;
                 gridHelper.material.transparent = true;
                 scene.add(gridHelper);
 
+                // Demo objects
                 const geometry = new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16);
                 const material = new THREE.MeshPhongMaterial({ 
                     color: 0x6366f1,
@@ -1335,6 +1539,7 @@
                 mesh.castShadow = true;
                 scene.add(mesh);
 
+                // Animation
                 const animate = () => {
                     requestAnimationFrame(animate);
                     mesh.rotation.x += 0.005;
@@ -1474,11 +1679,19 @@
             return (
                 <div className="app">
                     <header className="header">
-                        <div className="logo">
-                            <div className="logo-icon">
-                                <span>📸</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button 
+                                className="mobile-menu-btn"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            >
+                                ☰
+                            </button>
+                            <div className="logo">
+                                <div className="logo-icon">
+                                    <span>📸</span>
+                                </div>
+                                <span className="logo-text">Scansione 3D Pro</span>
                             </div>
-                            <span className="logo-text">Scansione 3D Pro</span>
                         </div>
 
                         <div className="header-center">
@@ -1521,7 +1734,12 @@
                     </header>
 
                     <div className="main-content">
-                        <aside className="sidebar">
+                        <div 
+                            className={`mobile-overlay ${mobileMenuOpen ? 'show' : ''}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                        ></div>
+                        
+                        <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
                             <div className="sidebar-header">
                                 <div className="sidebar-title">Pannello di Controllo</div>
                                 <div className="sidebar-subtitle">
@@ -1971,32 +2189,3 @@
     </script>
 </body>
 </html>
-```
-
----
-
-## 🚀 **GUIDA CARICAMENTO SU GITHUB**
-
-### **Passo 1: Crea Repository**
-1. Vai su https://github.com
-2. Clicca **"New repository"** (pulsante verde)
-3. Nome: `scansione-3d-pro`
-4. Seleziona **"Public"**
-5. Clicca **"Create repository"**
-
-### **Passo 2: Carica il file**
-1. Clicca **"uploading an existing file"**
-2. Crea un file chiamato `index.html`
-3. Incolla tutto il codice sopra
-4. Clicca **"Commit changes"**
-
-### **Passo 3: Attiva GitHub Pages**
-1. Vai su **Settings** del tuo repository
-2. Scroll fino a **"Pages"** nel menu laterale
-3. Sotto **"Source"** seleziona **"main"** branch
-4. Clicca **"Save"**
-5. Dopo 1-2 minuti il sito sarà live!
-
-### **Il tuo link sarà:**
-```
-https://TUO-USERNAME.github.io/scansione-3d-pro/

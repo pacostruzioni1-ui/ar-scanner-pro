@@ -1,2191 +1,356 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scansione 3D Pro - Fotogrammetria Professionale</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #8b5cf6;
-            --accent: #ec4899;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #13131a;
-            --bg-tertiary: #1a1a24;
-            --bg-glass: rgba(26, 26, 36, 0.7);
-            --text-primary: #ffffff;
-            --text-secondary: #9ca3af;
-            --text-tertiary: #6b7280;
-            --border: rgba(255, 255, 255, 0.1);
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.3);
-            --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.5);
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        .app {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                        radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
-        }
-
-        /* Header Premium */
-        .header {
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            padding: 20px 32px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: relative;
-            z-index: 100;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, 
-                transparent 0%, 
-                var(--primary) 50%, 
-                transparent 100%);
-            opacity: 0.5;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .logo-icon::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shine 3s infinite;
-        }
-
-        @keyframes shine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-
-        .logo-text {
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .header-center {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .nav-pill {
-            padding: 10px 20px;
-            border-radius: 10px;
-            border: 1px solid transparent;
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-
-        .nav-pill:hover {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-            border-color: var(--border);
-        }
-
-        .nav-pill.active {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
-        }
-
-        .nav-pill.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40%;
-            height: 2px;
-            background: var(--primary);
-            border-radius: 2px 2px 0 0;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-family: inherit;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-secondary);
-            border-color: var(--primary);
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-        }
-
-        .btn-icon {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 18px;
-        }
-
-        .btn-icon:hover {
-            color: var(--text-primary);
-            border-color: var(--primary);
-            background: var(--bg-secondary);
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Sidebar Premium */
-        .sidebar {
-            width: 380px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sidebar::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 1px;
-            height: 100%;
-            background: linear-gradient(180deg, 
-                transparent 0%, 
-                var(--primary) 50%, 
-                transparent 100%);
-            opacity: 0.3;
-        }
-
-        .sidebar-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sidebar-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .sidebar-subtitle {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .sidebar-tabs {
-            display: flex;
-            padding: 16px 24px;
-            gap: 8px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-secondary);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px 16px;
-            background: transparent;
-            border: 1px solid transparent;
-            border-radius: 10px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .tab:hover {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-        }
-
-        .tab.active {
-            color: var(--text-primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-            border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-        }
-
-        .sidebar-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px;
-        }
-
-        /* Upload Zone Premium */
-        .upload-zone {
-            border: 2px dashed var(--border);
-            border-radius: 16px;
-            padding: 48px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--bg-secondary);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .upload-zone::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .upload-zone:hover::before {
-            opacity: 1;
-        }
-
-        .upload-zone:hover {
-            border-color: var(--primary);
-            background: var(--bg-tertiary);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
-        }
-
-        .upload-zone.dragging {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            transform: scale(1.02);
-            box-shadow: 0 0 40px rgba(99, 102, 241, 0.3);
-        }
-
-        .upload-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .upload-text {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .upload-hint {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* Photo Grid Premium */
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .photo-item {
-            position: relative;
-            aspect-ratio: 1;
-            border-radius: 12px;
-            overflow: hidden;
-            background: var(--bg-tertiary);
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
-        }
-
-        .photo-item:hover {
-            transform: scale(1.05);
-            border-color: var(--primary);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-            z-index: 10;
-        }
-
-        .photo-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .photo-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            align-items: flex-end;
-            padding: 12px;
-        }
-
-        .photo-item:hover .photo-overlay {
-            opacity: 1;
-        }
-
-        .photo-index {
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-        }
-
-        .photo-remove {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            border: none;
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: all 0.3s;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .photo-item:hover .photo-remove {
-            opacity: 1;
-        }
-
-        .photo-remove:hover {
-            background: var(--error);
-            transform: scale(1.1);
-        }
-
-        /* Stats Card */
-        .stats-card {
-            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-top: 12px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 4px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* Progress Bar */
-        .progress-container {
-            margin-top: 16px;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 12px;
-        }
-
-        .progress-label {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .progress-value {
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: var(--bg-secondary);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 4px;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        /* 3D Viewer Premium */
-        .viewer-container {
-            flex: 1;
-            position: relative;
-            background: var(--bg-primary);
-        }
-
-        #canvas-container {
-            width: 100%;
-            height: 100%;
-        }
-
-        .viewer-overlay {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .viewer-controls {
-            position: absolute;
-            top: 24px;
-            right: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            pointer-events: auto;
-        }
-
-        .control-btn {
-            width: 48px;
-            height: 48px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-secondary);
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .control-btn:hover {
-            color: var(--text-primary);
-            background: var(--bg-tertiary);
-            border-color: var(--primary);
-            transform: scale(1.1);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
-        }
-
-        .control-btn.active {
-            color: var(--text-primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.3) 100%);
-            border-color: var(--primary);
-            box-shadow: 0 0 24px rgba(99, 102, 241, 0.4);
-        }
-
-        /* Measurement Panel */
-        .measurement-panel {
-            position: absolute;
-            bottom: 24px;
-            left: 24px;
-            right: 24px;
-            max-width: 400px;
-            background: var(--bg-glass);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            pointer-events: auto;
-            box-shadow: var(--shadow-xl);
-        }
-
-        .measurement-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .measurement-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-
-        .measurement-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .measurement-value-display {
-            font-size: 42px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-            line-height: 1;
-        }
-
-        .measurement-hint {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* Processing Overlay Premium */
-        .processing-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(20px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-
-        .processing-circle {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            animation: pulse 2s ease-in-out infinite;
-            box-shadow: 0 0 60px rgba(99, 102, 241, 0.5);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .processing-circle::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
-            border: 2px solid var(--primary);
-            animation: rotate 3s linear infinite;
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .processing-icon {
-            font-size: 48px;
-            animation: processing-bounce 1s ease-in-out infinite;
-        }
-
-        @keyframes processing-bounce {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(0.9); }
-        }
-
-        .processing-text {
-            margin-top: 32px;
-            font-size: 24px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--primary-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .processing-hint {
-            margin-top: 12px;
-            font-size: 15px;
-            color: var(--text-secondary);
-        }
-
-        .processing-steps {
-            margin-top: 32px;
-            display: flex;
-            gap: 16px;
-        }
-
-        .processing-step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .step-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .step-circle.completed {
-            background: var(--success);
-            border-color: var(--success);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        }
-
-        .step-circle.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        .step-label {
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-
-        /* Projects List Premium */
-        .project-item {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .project-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .project-item:hover {
-            background: var(--bg-secondary);
-            border-color: var(--primary);
-            transform: translateX(8px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
-        }
-
-        .project-item:hover::before {
-            opacity: 1;
-        }
-
-        .project-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 12px;
-        }
-
-        .project-name {
-            font-weight: 700;
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .project-status {
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-completed {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-
-        .status-processing {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning);
-        }
-
-        .project-meta {
-            display: flex;
-            gap: 20px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 12px;
-        }
-
-        .project-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Settings Panel Premium */
-        .settings-group {
-            margin-bottom: 32px;
-        }
-
-        .settings-title {
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .setting-item:last-child {
-            border-bottom: none;
-        }
-
-        .setting-info {
-            flex: 1;
-        }
-
-        .setting-label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .setting-description {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .toggle {
-            width: 52px;
-            height: 28px;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border);
-            border-radius: 14px;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .toggle.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-        }
-
-        .toggle-slider {
-            width: 22px;
-            height: 22px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 1px;
-            left: 1px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .toggle.active .toggle-slider {
-            transform: translateX(24px);
-        }
-
-        .select-custom {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            padding: 10px 16px;
-            font-size: 14px;
-            font-family: inherit;
-            cursor: pointer;
-            transition: all 0.3s;
-            outline: none;
-        }
-
-        .select-custom:hover {
-            border-color: var(--primary);
-        }
-
-        .select-custom:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        /* Empty State Premium */
-        .empty-state {
-            text-align: center;
-            padding: 80px 32px;
-        }
-
-        .empty-icon {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 24px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            opacity: 0.6;
-        }
-
-        .empty-text {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .empty-hint {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        /* Guided Capture Mode */
-        .guided-mode {
-            position: relative;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .capture-view {
-            flex: 1;
-            position: relative;
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .capture-circle {
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            border: 4px dashed var(--primary);
-            position: relative;
-            animation: rotate-slow 20s linear infinite;
-        }
-
-        @keyframes rotate-slow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .capture-indicator {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
-        }
-
-        .capture-guide {
-            margin-top: 24px;
-            padding: 20px;
-            background: var(--bg-tertiary);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-        }
-
-        .guide-step {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .guide-step:hover {
-            background: var(--bg-tertiary);
-            transform: translateX(4px);
-        }
-
-        .guide-step.active {
-            border: 1px solid var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
-        }
-
-        .guide-number {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .guide-text {
-            flex: 1;
-            font-size: 14px;
-        }
-
-        /* Mobile Menu Button */
-        .mobile-menu-btn {
-            display: none;
-            width: 44px;
-            height: 44px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 24px;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mobile-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 89;
-        }
-
-        .mobile-overlay.show {
-            display: block;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .sidebar {
-                width: 320px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .mobile-menu-btn {
-                display: flex;
-            }
-
-            .header {
-                padding: 12px 16px;
-            }
-
-            .header-center {
-                display: none;
-            }
-
-            .header-actions {
-                gap: 8px;
-            }
-
-            .header-actions .btn span:last-child,
-            .header-actions .btn-secondary {
-                display: none;
-            }
-
-            .btn {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-
-            .btn-icon {
-                width: 40px;
-                height: 40px;
-            }
-
-            .sidebar {
-                position: fixed;
-                z-index: 90;
-                width: 85%;
-                max-width: 360px;
-                height: 100vh;
-                transform: translateX(-100%);
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                box-shadow: var(--shadow-xl);
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .sidebar-header {
-                padding: 20px;
-            }
-
-            .sidebar-title {
-                font-size: 16px;
-            }
-
-            .sidebar-subtitle {
-                font-size: 13px;
-            }
-
-            .sidebar-tabs {
-                padding: 12px 16px;
-            }
-
-            .tab {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-
-            .sidebar-content {
-                padding: 16px;
-            }
-
-            .upload-zone {
-                padding: 32px 16px;
-            }
-
-            .upload-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 28px;
-            }
-
-            .upload-text {
-                font-size: 16px;
-            }
-
-            .upload-hint {
-                font-size: 13px;
-            }
-
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-
-            .stats-card {
-                padding: 16px;
-            }
-
-            .viewer-controls {
-                top: 16px;
-                right: 16px;
-                gap: 8px;
-            }
-
-            .control-btn {
-                width: 44px;
-                height: 44px;
-                font-size: 18px;
-            }
-
-            .measurement-panel {
-                bottom: 16px;
-                left: 16px;
-                right: 16px;
-                padding: 16px;
-            }
-
-            .measurement-value-display {
-                font-size: 32px;
-            }
-
-            .processing-circle {
-                width: 100px;
-                height: 100px;
-            }
-
-            .processing-icon {
-                font-size: 40px;
-            }
-
-            .processing-text {
-                font-size: 20px;
-            }
-
-            .processing-steps {
-                flex-wrap: wrap;
-                gap: 12px;
-            }
-
-            .capture-circle {
-                width: 200px;
-                height: 200px;
-            }
-
-            .capture-indicator {
-                width: 60px;
-                height: 60px;
-                font-size: 24px;
-            }
-
-            /* Mobile-specific empty state */
-            .empty-state {
-                padding: 40px 20px;
-            }
-
-            .empty-icon {
-                width: 80px;
-                height: 80px;
-                font-size: 36px;
-            }
-
-            .empty-text {
-                font-size: 18px;
-            }
-
-            .empty-hint {
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .logo-text {
-                font-size: 16px;
-            }
-
-            .logo-icon {
-                width: 36px;
-                height: 36px;
-                font-size: 18px;
-            }
-
-            .header-actions .btn-icon:first-child {
-                display: none;
-            }
-
-            .photo-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .stats-grid {
-                gap: 12px;
-            }
-
-            .stat-value {
-                font-size: 24px;
-            }
-        }
-
-        /* Scrollbar Premium */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--bg-tertiary);
-            border-radius: 5px;
-            border: 2px solid var(--bg-secondary);
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        }
-
-        /* Tooltips */
-        [data-tooltip] {
-            position: relative;
-        }
-
-        [data-tooltip]::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%) translateY(-8px);
-            padding: 8px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-            z-index: 1000;
-        }
-
-        [data-tooltip]:hover::after {
-            opacity: 1;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Costruzioni Pro • Scanner LiDAR + AutoCAD Export</title>
+  
+  <meta name="description" content="App iOS professionale per cantieri: scansione LiDAR 3D, planimetrie automatiche, export USDZ / PDF / DXF compatibile AutoCAD. Richiede iPhone Pro."/>
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Costruzioni Pro - Scanner LiDAR per Edili"/>
+  <meta property="og:description" content="Scansione stanze → planimetria 2D/3D → export diretto per AutoCAD e altri CAD."/>
+  <meta property="og:image" content="https://via.placeholder.com/1200x630/000000/00D4FF?text=Costruzioni+Pro+LiDAR"/>
+  <meta property="og:url" content="https://github.com/pacostruzioni1-ui/ar-scanner-pro"/>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14/dist/ScrollTrigger.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-sec: #111111;
+      --accent: #00D4FF;
+      --accent-dark: #0099FF;
+      --gold: #FFB800;
+      --text: #f0f0f0;
+      --muted: #a0a0a0;
+      --border: #222222;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    h1, h2, h3 { font-family: 'Playfair Display', serif; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+    
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 20px 0;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    header.shrink {
+      padding: 12px 0;
+      background: rgba(0,0,0,0.96);
+      backdrop-filter: blur(20px);
+    }
+    nav { display: flex; justify-content: space-between; align-items: center; }
+    .logo { 
+      font-size: 2.1rem; 
+      font-weight: 700; 
+      color: var(--accent);
+      transition: all 0.4s ease;
+    }
+    header.shrink .logo { font-size: 1.8rem; }
+    
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      background: linear-gradient(135deg, #0a0a0a, #000);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 30% 70%, rgba(0,212,255,0.15), transparent 65%);
+      opacity: 0.8;
+    }
+    .hero-content { position: relative; z-index: 2; max-width: 900px; }
+    .hero h1 {
+      font-size: clamp(4.5rem, 10vw, 8.5rem);
+      line-height: 0.92;
+      background: linear-gradient(90deg, var(--accent), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 1.8rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 18px 44px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      border-radius: 50px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      color: #000;
+      box-shadow: 0 12px 40px rgba(0,212,255,0.4);
+    }
+    .btn-outline { 
+      border: 2.5px solid var(--accent); 
+      color: var(--accent); 
+      background: transparent;
+    }
+    
+    section { padding: 160px 0 120px; }
+    h2 { 
+      font-size: 3.8rem; 
+      text-align: center; 
+      margin-bottom: 4rem;
+      opacity: 0.9;
+    }
+    
+    .features-grid, .cad-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 40px;
+    }
+    .card {
+      background: rgba(20,20,20,0.75);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transition: all 0.6s ease;
+    }
+    .card:hover {
+      transform: translateY(-16px);
+      border-color: var(--accent);
+      box-shadow: 0 30px 80px rgba(0,212,255,0.25);
+    }
+    .icon { font-size: 4rem; color: var(--accent); margin-bottom: 1.5rem; }
+    
+    .cad-section { 
+      background: #0a0a0a; 
+      border-radius: 32px; 
+      padding: 100px 40px; 
+      text-align: center; 
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    
+    footer {
+      background: #0a0a0a;
+      padding: 120px 0 60px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 5.2rem; }
+      section { padding: 120px 0 80px; }
+      h2 { font-size: 3rem; }
+      .features-grid, .cad-grid { gap: 32px; }
+      .card { padding: 32px; }
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+  <header id="header">
+    <div class="container">
+      <nav>
+        <div class="logo">Costruzioni Pro</div>
+        <div>
+          <a href="#cad" class="btn btn-outline" style="margin-right:20px;">AutoCAD</a>
+          <a href="#contact" class="btn btn-primary">Contattami</a>
+        </div>
+      </nav>
+    </div>
+  </header>
 
-        function App() {
-            const [currentView, setCurrentView] = useState('capture');
-            const [activeTab, setActiveTab] = useState('capture');
-            const [photos, setPhotos] = useState([]);
-            const [processing, setProcessing] = useState(false);
-            const [processingStep, setProcessingStep] = useState(0);
-            const [model, setModel] = useState(null);
-            const [measurementMode, setMeasurementMode] = useState(false);
-            const [measurement, setMeasurement] = useState(null);
-            const [projects, setProjects] = useState([]);
-            const [dragging, setDragging] = useState(false);
-            const [guidedMode, setGuidedMode] = useState(false);
-            const [captureStep, setCaptureStep] = useState(0);
-            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1>Scanner LiDAR per Cantieri<br>con Export AutoCAD</h1>
+        <p style="font-size:1.6rem; color:var(--muted); max-width:760px; margin:2.5rem 0; line-height:1.7;">
+          Scansione 3D stanze in tempo reale • Planimetrie automatiche • Export USDZ modificabile in AutoCAD • PDF vettoriale • DXF in arrivo
+        </p>
+        <div class="btn-group">
+          <a href="https://testflight.apple.com/" class="btn btn-primary" target="_blank">Prova Beta TestFlight</a>
+          <a href="#cad" class="btn btn-outline" style="margin-left:24px;">Vedi Integrazioni CAD</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            const canvasRef = useRef(null);
-            const sceneRef = useRef(null);
-            const cameraRef = useRef(null);
-            const rendererRef = useRef(null);
-            const controlsRef = useRef(null);
+  <section id="features">
+    <div class="container">
+      <h2>Funzionalità Principali</h2>
+      <div class="features-grid">
+        <div class="card">
+          <div class="icon"><i class="fas fa-cube"></i></div>
+          <h3>Scanner LiDAR Real-Time</h3>
+          <p>Usa ARKit + RoomPlan per rilevare pareti, porte, finestre e oggetti con precisione millimetrica.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><i class="fas fa-drafting-compass"></i></div>
+          <h3>Planimetrie 2D Automatiche</h3>
+          <p>Vista dall'alto con quote, scala e annotazioni – pronta per export.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><i class="fas fa-folder-open"></i></div>
+          <h3>Gestione Progetti</h3>
+          <p>Dashboard, clienti, geolocalizzazione cantieri, timeline e foto georeferenziate.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><i class="fas fa-camera"></i></div>
+          <h3>Documentazione Foto</h3>
+          <p>Galleria per progetto, before/after, note vocali e annotazioni.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            useEffect(() => {
-                initThreeJS();
-                loadProjects();
-                return () => {
-                    if (rendererRef.current) {
-                        rendererRef.current.dispose();
-                    }
-                };
-            }, []);
+  <section id="cad" class="cad-section">
+    <div class="container">
+      <h2>Integrazione con AutoCAD</h2>
+      <p style="font-size:1.4rem; max-width:840px; margin:0 auto 4rem; color:var(--muted); line-height:1.8;">
+        Esporta i modelli 3D e le planimetrie 2D direttamente compatibili con AutoCAD (2023+).
+      </p>
+      <div class="cad-grid">
+        <div class="card">
+          <div class="icon"><i class="fas fa-file-export"></i></div>
+          <h3>USDZ / USD (Modificabile)</h3>
+          <p>Export nativo da RoomPlan → import diretto in AutoCAD con comando IMPORT.<br>Mantiene quote parametriche (muri, porte, finestre).</p>
+        </div>
+        <div class="card">
+          <div class="icon"><i class="fas fa-file-pdf"></i></div>
+          <h3>PDF Vettoriale</h3>
+          <p>Planimetria 2D con quote e layers → apribile e modificabile in AutoCAD come PDF underlay.</p>
+        </div>
+        <div class="card">
+          <div class="icon"><i class="fas fa-drafting-compass"></i></div>
+          <h3>DXF (in sviluppo)</h3>
+          <p>Generazione 2D puro (linee, testi quote, layers Pareti/Porte) – compatibile con tutte le versioni AutoCAD.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            const initThreeJS = () => {
-                const container = document.getElementById('canvas-container');
-                if (!container) return;
+  <footer id="contact">
+    <div class="container">
+      <h2>Pronto a testare sul tuo cantiere?</h2>
+      <p style="font-size:1.5rem; color:var(--muted); max-width:720px; margin:3rem auto; line-height:1.8;">
+        Contattami per beta access, personalizzazioni o collaborazione su export CAD.
+      </p>
+      <a href="mailto:info@tuodominio.it" class="btn btn-primary" style="font-size:1.5rem; padding:22px 70px;">
+        Scrivimi ora →
+      </a>
+      <div style="margin-top:6rem; color:var(--muted); font-size:0.95rem;">
+        © 2026 Costruzioni Pro • Sviluppato con Swift, ARKit, RoomPlan • Torino, Italia
+      </div>
+    </div>
+  </footer>
 
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x0a0a0f);
-                sceneRef.current = scene;
+  <script>
+    gsap.registerPlugin(ScrollTrigger);
 
-                const camera = new THREE.PerspectiveCamera(
-                    75,
-                    container.clientWidth / container.clientHeight,
-                    0.1,
-                    1000
-                );
-                camera.position.set(3, 3, 5);
-                cameraRef.current = camera;
+    // Hero: animazione ultra-fluida e progressiva
+    gsap.timeline()
+      .from(".hero h1", {
+        y: 180,
+        opacity: 0,
+        duration: 1.8,
+        ease: "power4.out"
+      })
+      .from(".hero p", {
+        y: 100,
+        opacity: 0,
+        duration: 1.4,
+        ease: "power4.out"
+      }, "-=1")
+      .from(".btn", {
+        y: 80,
+        opacity: 0,
+        duration: 1.2,
+        stagger: 0.2,
+        ease: "elastic.out(1, 0.6)"
+      }, "-=0.8");
 
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                renderer.setPixelRatio(window.devicePixelRatio);
-                renderer.shadowMap.enabled = true;
-                container.appendChild(renderer.domElement);
-                rendererRef.current = renderer;
+    // Titoli sezioni: leggero parallax + fade
+    gsap.utils.toArray("section h2").forEach((title) => {
+      gsap.from(title, {
+        scrollTrigger: {
+          trigger: title,
+          start: "top 80%",
+          toggleActions: "play none none reverse"
+        },
+        y: 100,
+        opacity: 0,
+        duration: 1.6,
+        ease: "power4.out"
+      });
+    });
 
-                const controls = new THREE.OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controlsRef.current = controls;
+    // Card: stagger fluido e naturale
+    gsap.utils.toArray(".card").forEach((card, i) => {
+      gsap.from(card, {
+        scrollTrigger: {
+          trigger: card,
+          start: "top 85%",
+          toggleActions: "play none none reverse"
+        },
+        y: 140,
+        opacity: 0,
+        duration: 1.4,
+        ease: "power4.out",
+        delay: i * 0.1
+      });
+    });
 
-                // Lights
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                scene.add(ambientLight);
+    // Hover pulsanti: glow + scale super smooth
+    document.querySelectorAll(".btn").forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        gsap.to(btn, {
+          scale: 1.1,
+          y: -8,
+          duration: 0.8,
+          ease: "power3.out",
+          boxShadow: "0 25px 60px rgba(0,212,255,0.6)"
+        });
+      });
+      btn.addEventListener("mouseleave", () => {
+        gsap.to(btn, {
+          scale: 1,
+          y: 0,
+          duration: 0.8,
+          ease: "power3.out",
+          boxShadow: btn.classList.contains("btn-primary") 
+            ? "0 12px 40px rgba(0,212,255,0.4)" 
+            : "none"
+        });
+      });
+    });
 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                directionalLight.position.set(5, 10, 7.5);
-                directionalLight.castShadow = true;
-                scene.add(directionalLight);
+    // Header shrink ultra-smooth
+    ScrollTrigger.create({
+      start: "top -100",
+      onEnter: () => gsap.to("#header", { padding: "12px 0", background: "rgba(0,0,0,0.96)", duration: 0.6, ease: "power2.out" }),
+      onLeaveBack: () => gsap.to("#header", { padding: "20px 0", background: "rgba(0,0,0,0.75)", duration: 0.6, ease: "power2.out" })
+    });
+  </script>
 
-                const pointLight1 = new THREE.PointLight(0x6366f1, 1, 50);
-                pointLight1.position.set(-5, 5, 5);
-                scene.add(pointLight1);
-
-                const pointLight2 = new THREE.PointLight(0x8b5cf6, 1, 50);
-                pointLight2.position.set(5, 5, -5);
-                scene.add(pointLight2);
-
-                // Grid
-                const gridHelper = new THREE.GridHelper(20, 20, 0x6366f1, 0x1a1a24);
-                gridHelper.material.opacity = 0.3;
-                gridHelper.material.transparent = true;
-                scene.add(gridHelper);
-
-                // Demo objects
-                const geometry = new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16);
-                const material = new THREE.MeshPhongMaterial({ 
-                    color: 0x6366f1,
-                    emissive: 0x222244,
-                    shininess: 100
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.y = 1;
-                mesh.castShadow = true;
-                scene.add(mesh);
-
-                // Animation
-                const animate = () => {
-                    requestAnimationFrame(animate);
-                    mesh.rotation.x += 0.005;
-                    mesh.rotation.y += 0.01;
-                    controls.update();
-                    renderer.render(scene, camera);
-                };
-                animate();
-
-                const handleResize = () => {
-                    const width = container.clientWidth;
-                    const height = container.clientHeight;
-                    camera.aspect = width / height;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(width, height);
-                };
-                window.addEventListener('resize', handleResize);
-            };
-
-            const handleFileSelect = (e) => {
-                const files = Array.from(e.target.files);
-                processFiles(files);
-            };
-
-            const handleDrop = (e) => {
-                e.preventDefault();
-                setDragging(false);
-                const files = Array.from(e.dataTransfer.files);
-                processFiles(files);
-            };
-
-            const processFiles = (files) => {
-                const imageFiles = files.filter(f => f.type.startsWith('image/'));
-                imageFiles.forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        setPhotos(prev => [...prev, {
-                            id: Date.now() + Math.random(),
-                            url: e.target.result,
-                            name: file.name,
-                            size: (file.size / 1024).toFixed(2) + ' KB'
-                        }]);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            };
-
-            const removePhoto = (id) => {
-                setPhotos(prev => prev.filter(p => p.id !== id));
-            };
-
-            const processPhotogrammetry = () => {
-                if (photos.length < 3) {
-                    alert('⚠️ Carica almeno 3 foto per creare un modello 3D di qualità');
-                    return;
-                }
-
-                setProcessing(true);
-                setProcessingStep(0);
-
-                const steps = [
-                    { duration: 800, step: 0 },
-                    { duration: 1200, step: 1 },
-                    { duration: 1000, step: 2 },
-                    { duration: 1000, step: 3 }
-                ];
-
-                let currentStep = 0;
-
-                const processStep = () => {
-                    if (currentStep < steps.length) {
-                        setTimeout(() => {
-                            setProcessingStep(steps[currentStep].step + 1);
-                            currentStep++;
-                            processStep();
-                        }, steps[currentStep].duration);
-                    } else {
-                        setTimeout(() => {
-                            setProcessing(false);
-                            setModel({ 
-                                name: 'Modello 3D', 
-                                vertices: (Math.random() * 50000 + 10000).toFixed(0), 
-                                faces: (Math.random() * 30000 + 5000).toFixed(0),
-                                quality: 'Alta'
-                            });
-                            
-                            const project = {
-                                id: Date.now(),
-                                name: `Scansione ${new Date().toLocaleDateString('it-IT')}`,
-                                photos: photos.length,
-                                date: new Date().toISOString(),
-                                model: true,
-                                status: 'completed'
-                            };
-                            const saved = JSON.parse(localStorage.getItem('projects') || '[]');
-                            saved.unshift(project);
-                            localStorage.setItem('projects', JSON.stringify(saved));
-                            loadProjects();
-                        }, 500);
-                    }
-                };
-
-                processStep();
-            };
-
-            const loadProjects = () => {
-                const saved = JSON.parse(localStorage.getItem('projects') || '[]');
-                setProjects(saved);
-            };
-
-            const exportModel = (format) => {
-                if (!model) {
-                    alert('⚠️ Nessun modello disponibile per l\'esportazione');
-                    return;
-                }
-                alert(`✅ Esportazione in formato ${format.toUpperCase()} completata!`);
-            };
-
-            const toggleMeasurement = () => {
-                setMeasurementMode(!measurementMode);
-                if (!measurementMode) {
-                    setMeasurement((Math.random() * 5 + 0.5).toFixed(2));
-                }
-            };
-
-            const captureSteps = [
-                { icon: '📸', text: 'Inizia dalla vista frontale', angle: 0 },
-                { icon: '↪️', text: 'Ruota 45° a destra', angle: 45 },
-                { icon: '↪️', text: 'Continua a ruotare', angle: 90 },
-                { icon: '↪️', text: 'Vista laterale destra', angle: 135 },
-                { icon: '🔄', text: 'Vista posteriore', angle: 180 },
-                { icon: '↩️', text: 'Vista laterale sinistra', angle: 225 },
-                { icon: '↩️', text: 'Continua a sinistra', angle: 270 },
-                { icon: '✨', text: 'Ultima angolazione', angle: 315 },
-            ];
-
-            return (
-                <div className="app">
-                    <header className="header">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <button 
-                                className="mobile-menu-btn"
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            >
-                                ☰
-                            </button>
-                            <div className="logo">
-                                <div className="logo-icon">
-                                    <span>📸</span>
-                                </div>
-                                <span className="logo-text">Scansione 3D Pro</span>
-                            </div>
-                        </div>
-
-                        <div className="header-center">
-                            <button 
-                                className={`nav-pill ${currentView === 'capture' ? 'active' : ''}`}
-                                onClick={() => setCurrentView('capture')}
-                            >
-                                🎯 Cattura
-                            </button>
-                            <button 
-                                className={`nav-pill ${currentView === 'viewer' ? 'active' : ''}`}
-                                onClick={() => setCurrentView('viewer')}
-                            >
-                                🎨 Visualizza
-                            </button>
-                            <button 
-                                className={`nav-pill ${currentView === 'analyze' ? 'active' : ''}`}
-                                onClick={() => setCurrentView('analyze')}
-                            >
-                                📊 Analizza
-                            </button>
-                        </div>
-
-                        <div className="header-actions">
-                            <button className="btn-icon" data-tooltip="Notifiche">
-                                🔔
-                            </button>
-                            <button className="btn-icon" data-tooltip="Impostazioni">
-                                ⚙️
-                            </button>
-                            <button className="btn btn-secondary" onClick={() => exportModel('obj')}>
-                                <span>💾</span>
-                                <span>Esporta</span>
-                            </button>
-                            <button className="btn btn-primary" onClick={processPhotogrammetry}>
-                                <span>✨</span>
-                                <span>Genera 3D</span>
-                            </button>
-                        </div>
-                    </header>
-
-                    <div className="main-content">
-                        <div 
-                            className={`mobile-overlay ${mobileMenuOpen ? 'show' : ''}`}
-                            onClick={() => setMobileMenuOpen(false)}
-                        ></div>
-                        
-                        <aside className={`sidebar ${mobileMenuOpen ? 'open' : ''}`}>
-                            <div className="sidebar-header">
-                                <div className="sidebar-title">Pannello di Controllo</div>
-                                <div className="sidebar-subtitle">
-                                    Gestisci la tua scansione 3D
-                                </div>
-                            </div>
-
-                            <div className="sidebar-tabs">
-                                <button 
-                                    className={`tab ${activeTab === 'capture' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('capture')}
-                                >
-                                    <span>📷</span>
-                                    <span>Cattura</span>
-                                </button>
-                                <button 
-                                    className={`tab ${activeTab === 'projects' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('projects')}
-                                >
-                                    <span>📁</span>
-                                    <span>Progetti</span>
-                                </button>
-                                <button 
-                                    className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('settings')}
-                                >
-                                    <span>⚙️</span>
-                                    <span>Opzioni</span>
-                                </button>
-                            </div>
-
-                            <div className="sidebar-content">
-                                {activeTab === 'capture' && (
-                                    <div>
-                                        <div style={{ marginBottom: '20px', display: 'flex', gap: '12px' }}>
-                                            <button 
-                                                className={`btn ${!guidedMode ? 'btn-primary' : 'btn-secondary'}`}
-                                                style={{ flex: 1 }}
-                                                onClick={() => setGuidedMode(false)}
-                                            >
-                                                📤 Caricamento Libero
-                                            </button>
-                                            <button 
-                                                className={`btn ${guidedMode ? 'btn-primary' : 'btn-secondary'}`}
-                                                style={{ flex: 1 }}
-                                                onClick={() => setGuidedMode(true)}
-                                            >
-                                                🎯 Modalità Guidata
-                                            </button>
-                                        </div>
-
-                                        {!guidedMode ? (
-                                            <>
-                                                <input
-                                                    type="file"
-                                                    multiple
-                                                    accept="image/*"
-                                                    onChange={handleFileSelect}
-                                                    style={{ display: 'none' }}
-                                                    id="file-input"
-                                                />
-                                                <div 
-                                                    className={`upload-zone ${dragging ? 'dragging' : ''}`}
-                                                    onClick={() => document.getElementById('file-input').click()}
-                                                    onDrop={handleDrop}
-                                                    onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-                                                    onDragLeave={() => setDragging(false)}
-                                                >
-                                                    <div className="upload-icon">📤</div>
-                                                    <div className="upload-text">Carica le tue foto</div>
-                                                    <div className="upload-hint">
-                                                        Trascina qui le immagini oppure clicca per selezionarle<br/>
-                                                        Formati supportati: JPG, PNG, HEIC
-                                                    </div>
-                                                </div>
-
-                                                {photos.length > 0 && (
-                                                    <>
-                                                        <div className="photo-grid">
-                                                            {photos.map((photo, index) => (
-                                                                <div key={photo.id} className="photo-item">
-                                                                    <img src={photo.url} alt={photo.name} />
-                                                                    <div className="photo-overlay">
-                                                                        <div className="photo-index">#{index + 1}</div>
-                                                                    </div>
-                                                                    <button 
-                                                                        className="photo-remove"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            removePhoto(photo.id);
-                                                                        }}
-                                                                    >
-                                                                        ✕
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-
-                                                        <div className="stats-card">
-                                                            <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}>
-                                                                📊 Statistiche Scansione
-                                                            </div>
-                                                            <div className="stats-grid">
-                                                                <div className="stat-item">
-                                                                    <div className="stat-value">{photos.length}</div>
-                                                                    <div className="stat-label">Foto</div>
-                                                                </div>
-                                                                <div className="stat-item">
-                                                                    <div className="stat-value">{Math.min(100, photos.length * 4)}%</div>
-                                                                    <div className="stat-label">Copertura</div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="progress-container">
-                                                                <div className="progress-header">
-                                                                    <div className="progress-label">Qualità stimata</div>
-                                                                    <div className="progress-value">
-                                                                        {photos.length < 10 ? 'Bassa' : photos.length < 20 ? 'Media' : 'Alta'}
-                                                                    </div>
-                                                                </div>
-                                                                <div className="progress-bar">
-                                                                    <div 
-                                                                        className="progress-fill" 
-                                                                        style={{ width: `${Math.min(100, photos.length * 3.33)}%` }}
-                                                                    ></div>
-                                                                </div>
-                                                            </div>
-                                                            <div style={{ 
-                                                                marginTop: '16px', 
-                                                                fontSize: '12px', 
-                                                                color: 'var(--text-secondary)',
-                                                                padding: '12px',
-                                                                background: 'var(--bg-secondary)',
-                                                                borderRadius: '8px'
-                                                            }}>
-                                                                💡 <strong>Suggerimento:</strong> Per risultati ottimali, carica 20-30 foto da diverse angolazioni con buona illuminazione
-                                                            </div>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="guided-mode">
-                                                <div className="capture-view">
-                                                    <div className="capture-circle">
-                                                        {captureSteps.map((step, index) => {
-                                                            const angle = (step.angle * Math.PI) / 180;
-                                                            const x = Math.cos(angle) * 110;
-                                                            const y = Math.sin(angle) * 110;
-                                                            return (
-                                                                <div
-                                                                    key={index}
-                                                                    className="capture-indicator"
-                                                                    style={{
-                                                                        left: `calc(50% + ${x}px)`,
-                                                                        top: `calc(50% + ${y}px)`,
-                                                                        transform: 'translate(-50%, -50%)',
-                                                                        opacity: index === captureStep ? 1 : 0.3,
-                                                                        transform: `translate(-50%, -50%) scale(${index === captureStep ? 1.2 : 0.8})`
-                                                                    }}
-                                                                >
-                                                                    {step.icon}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-
-                                                <div className="capture-guide">
-                                                    <div style={{ fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}>
-                                                        📋 Guida Acquisizione
-                                                    </div>
-                                                    {captureSteps.map((step, index) => (
-                                                        <div 
-                                                            key={index}
-                                                            className={`guide-step ${index === captureStep ? 'active' : ''}`}
-                                                            onClick={() => setCaptureStep(index)}
-                                                        >
-                                                            <div className="guide-number">{index + 1}</div>
-                                                            <div className="guide-text">{step.text}</div>
-                                                            {index < captureStep && <span>✅</span>}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeTab === 'projects' && (
-                                    <div>
-                                        {projects.length === 0 ? (
-                                            <div className="empty-state">
-                                                <div className="empty-icon">📂</div>
-                                                <div className="empty-text">Nessun progetto salvato</div>
-                                                <div className="empty-hint">
-                                                    I tuoi progetti di scansione 3D<br/>appariranno qui automaticamente
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            projects.map(project => (
-                                                <div key={project.id} className="project-item">
-                                                    <div className="project-header">
-                                                        <div>
-                                                            <div className="project-name">{project.name}</div>
-                                                        </div>
-                                                        <div className={`project-status ${project.status === 'completed' ? 'status-completed' : 'status-processing'}`}>
-                                                            {project.status === 'completed' ? '✓ Completato' : '⏳ In corso'}
-                                                        </div>
-                                                    </div>
-                                                    <div className="project-meta">
-                                                        <div className="project-meta-item">
-                                                            <span>📷</span>
-                                                            <span>{project.photos} foto</span>
-                                                        </div>
-                                                        <div className="project-meta-item">
-                                                            <span>📅</span>
-                                                            <span>{new Date(project.date).toLocaleDateString('it-IT')}</span>
-                                                        </div>
-                                                        <div className="project-meta-item">
-                                                            <span>🎨</span>
-                                                            <span>3D Model</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeTab === 'settings' && (
-                                    <div>
-                                        <div className="settings-group">
-                                            <div className="settings-title">Qualità Modello 3D</div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Alta risoluzione</div>
-                                                    <div className="setting-description">Genera modelli con dettagli massimi</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Ottimizza texture</div>
-                                                    <div className="setting-description">Riduci dimensione mantenendo qualità</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Auto-decimazione</div>
-                                                    <div className="setting-description">Semplifica mesh automaticamente</div>
-                                                </div>
-                                                <div className="toggle">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="settings-group">
-                                            <div className="settings-title">Misurazioni</div>
-                                            <div className="setting-item">
-                                                <div className="setting-label">Unità di misura</div>
-                                                <select className="select-custom">
-                                                    <option>Metri (m)</option>
-                                                    <option>Centimetri (cm)</option>
-                                                    <option>Millimetri (mm)</option>
-                                                    <option>Pollici (in)</option>
-                                                    <option>Piedi (ft)</option>
-                                                </select>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Mostra griglia</div>
-                                                    <div className="setting-description">Visualizza griglia di riferimento</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Snap to grid</div>
-                                                    <div className="setting-description">Allinea misure alla griglia</div>
-                                                </div>
-                                                <div className="toggle">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="settings-group">
-                                            <div className="settings-title">Esportazione</div>
-                                            <div className="setting-item">
-                                                <div className="setting-label">Formato predefinito</div>
-                                                <select className="select-custom">
-                                                    <option>GLB (consigliato)</option>
-                                                    <option>GLTF</option>
-                                                    <option>OBJ</option>
-                                                    <option>STL</option>
-                                                    <option>FBX</option>
-                                                    <option>PLY</option>
-                                                </select>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Includi texture</div>
-                                                    <div className="setting-description">Esporta con materiali e texture</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="settings-group">
-                                            <div className="settings-title">Performance</div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">GPU Acceleration</div>
-                                                    <div className="setting-description">Usa accelerazione hardware</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                            <div className="setting-item">
-                                                <div className="setting-info">
-                                                    <div className="setting-label">Auto-save</div>
-                                                    <div className="setting-description">Salvataggio automatico progetti</div>
-                                                </div>
-                                                <div className="toggle active">
-                                                    <div className="toggle-slider"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </aside>
-
-                        <div className="viewer-container">
-                            <div id="canvas-container"></div>
-
-                            <div className="viewer-overlay">
-                                <div className="viewer-controls">
-                                    <button 
-                                        className={`control-btn ${measurementMode ? 'active' : ''}`}
-                                        onClick={toggleMeasurement}
-                                        data-tooltip="Misura distanza"
-                                    >
-                                        📏
-                                    </button>
-                                    <button className="control-btn" data-tooltip="Reset camera">
-                                        🔄
-                                    </button>
-                                    <button className="control-btn" data-tooltip="Vista frontale">
-                                        👁️
-                                    </button>
-                                    <button className="control-btn" data-tooltip="Wireframe">
-                                        🔲
-                                    </button>
-                                    <button className="control-btn" data-tooltip="Screenshot">
-                                        📸
-                                    </button>
-                                    <button className="control-btn" data-tooltip="Schermo intero">
-                                        ⛶
-                                    </button>
-                                </div>
-
-                                {measurementMode && measurement && (
-                                    <div className="measurement-panel">
-                                        <div className="measurement-header">
-                                            <div className="measurement-icon">📏</div>
-                                            <div className="measurement-title">Misurazione Attiva</div>
-                                        </div>
-                                        <div className="measurement-value-display">
-                                            {measurement} m
-                                        </div>
-                                        <div className="measurement-hint">
-                                            💡 Clicca due punti sul modello 3D per misurare la distanza tra loro con precisione millimetrica
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {processing && (
-                                <div className="processing-overlay">
-                                    <div className="processing-circle">
-                                        <div className="processing-icon">🔄</div>
-                                    </div>
-                                    <div className="processing-text">
-                                        Elaborazione in corso...
-                                    </div>
-                                    <div className="processing-hint">
-                                        Generazione modello 3D da {photos.length} fotografie
-                                    </div>
-                                    <div className="processing-steps">
-                                        <div className="processing-step">
-                                            <div className={`step-circle ${processingStep > 0 ? 'completed' : processingStep === 0 ? 'active' : ''}`}>
-                                                {processingStep > 0 ? '✓' : '1'}
-                                            </div>
-                                            <div className="step-label">Analisi foto</div>
-                                        </div>
-                                        <div className="processing-step">
-                                            <div className={`step-circle ${processingStep > 1 ? 'completed' : processingStep === 1 ? 'active' : ''}`}>
-                                                {processingStep > 1 ? '✓' : '2'}
-                                            </div>
-                                            <div className="step-label">Allineamento</div>
-                                        </div>
-                                        <div className="processing-step">
-                                            <div className={`step-circle ${processingStep > 2 ? 'completed' : processingStep === 2 ? 'active' : ''}`}>
-                                                {processingStep > 2 ? '✓' : '3'}
-                                            </div>
-                                            <div className="step-label">Mesh 3D</div>
-                                        </div>
-                                        <div className="processing-step">
-                                            <div className={`step-circle ${processingStep > 3 ? 'completed' : processingStep === 3 ? 'active' : ''}`}>
-                                                {processingStep > 3 ? '✓' : '4'}
-                                            </div>
-                                            <div className="step-label">Texture</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!processing && photos.length === 0 && !model && (
-                                <div className="processing-overlay" style={{ background: 'rgba(10, 10, 15, 0.7)' }}>
-                                    <div className="empty-icon">🎯</div>
-                                    <div className="empty-text">Inizia una nuova scansione 3D</div>
-                                    <div className="empty-hint">
-                                        Carica le tue fotografie per creare un modello tridimensionale professionale<br/>
-                                        con texture ad alta risoluzione e precisione millimetrica
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        ReactDOM.render(<App />, document.getElementById('root'));
-    </script>
 </body>
 </html>

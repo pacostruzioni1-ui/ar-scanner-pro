@@ -126,7 +126,7 @@
     }
     
     section { 
-      padding: 160px env(safe-area-inset-top) 120px env(safe-area-inset-bottom); 
+      padding: 160px 0 120px; 
     }
     h2 { 
       font-size: 3.8rem; 
@@ -172,39 +172,6 @@
       border-top: 1px solid var(--border);
     }
     
-    /* Demo Gemini */
-    #ai-demo {
-      background: linear-gradient(135deg, #0a0a0a, #111);
-      padding: 100px 0;
-      text-align: center;
-    }
-    #prompt {
-      width: 100%;
-      max-width: 700px;
-      padding: 18px;
-      font-size: 1.1rem;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #111;
-      color: white;
-      resize: vertical;
-      min-height: 120px;
-      margin: 1.5rem auto;
-      display: block;
-    }
-    #response {
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 24px;
-      background: rgba(20,20,20,0.8);
-      border-radius: 16px;
-      border: 1px solid var(--border);
-      min-height: 200px;
-      text-align: left;
-      white-space: pre-wrap;
-      line-height: 1.7;
-    }
-
     @supports (padding-top: env(safe-area-inset-top)) {
       header { padding-top: calc(20px + env(safe-area-inset-top)); }
       .hero { min-height: calc(100vh - env(safe-area-inset-top)); }
@@ -248,26 +215,6 @@
           <a href="https://testflight.apple.com/" class="btn btn-primary" target="_blank">Prova Beta TestFlight</a>
           <a href="#cad" class="btn btn-outline">Vedi Integrazioni CAD</a>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Demo Gemini AI -->
-  <section id="ai-demo">
-    <div class="container">
-      <h2>Prova Gemini AI (gratuito)</h2>
-      <p style="margin-bottom: 1.5rem; color: var(--muted);">
-        Scrivi una domanda su cantieri, planimetrie, misure o qualsiasi argomento
-      </p>
-      
-      <textarea id="prompt" placeholder="Esempio: 'Quanto costa una planimetria a Torino?'"></textarea>
-      
-      <button id="generateBtn" class="btn btn-primary" style="padding: 18px 50px; font-size: 1.2rem;">
-        Genera Risposta con Gemini
-      </button>
-      
-      <div id="response">
-        La risposta di Gemini apparirà qui...
       </div>
     </div>
   </section>
@@ -334,7 +281,7 @@
       <p style="font-size:1.5rem; color:var(--muted); max-width:720px; margin:3rem auto; line-height:1.8;">
         Contattami per beta access, personalizzazioni o collaborazione su export CAD.
       </p>
-      <a href="mailto:info@tuodominio.it" class="btn btn-primary" style="font-size:1.5rem; padding:22px 70px;">
+      <a href="mailto:info@pepecostruzioni.it" class="btn btn-primary" style="font-size:1.5rem; padding:22px 70px;">
         Scrivimi ora →
       </a>
       <div style="margin-top:6rem; color:var(--muted); font-size:0.95rem;">
@@ -399,47 +346,6 @@
           });
         }
       });
-    });
-
-    // ────────────────────────────────────────────────
-    // Gemini API Demo con la tua chiave
-    const GEMINI_API_KEY = "AIzaSyDEytVKMaZ8SIEEJkPED1VUx8Pz8r7Pxx0";
-
-    document.getElementById('generateBtn').addEventListener('click', async () => {
-      const prompt = document.getElementById('prompt').value.trim();
-      const responseDiv = document.getElementById('response');
-
-      if (!prompt) {
-        responseDiv.innerHTML = '<p style="color:#ff6b6b;">Inserisci una domanda!</p>';
-        return;
-      }
-
-      responseDiv.innerHTML = '<p>Generazione in corso con Gemini...</p>';
-
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }]
-            })
-          }
-        );
-
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error?.message || `Errore HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta ricevuta';
-
-        responseDiv.innerHTML = `<strong>Gemini dice:</strong><br><br>${text.replace(/\n/g, '<br>')}`;
-      } catch (err) {
-        responseDiv.innerHTML = `<p style="color:#ff6b6b;">Errore: ${err.message}<br>La chiave potrebbe essere scaduta, bloccata o aver raggiunto il limite giornaliero.</p>`;
-      }
     });
   </script>
 

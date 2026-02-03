@@ -101,6 +101,7 @@
       text-decoration: none;
       position: relative;
       overflow: hidden;
+      cursor: pointer;
     }
     .btn-primary {
       background: linear-gradient(90deg, var(--accent), var(--accent-dark));
@@ -223,27 +224,29 @@
     </div>
   </section>
 
-  <section id="cad" class="cad-section">
+  <section id="cad">
     <div class="container">
-      <h2>Integrazione con AutoCAD</h2>
-      <p style="font-size:1.4rem; max-width:840px; margin:0 auto 4rem; color:var(--muted); line-height:1.8;">
-        Esporta i modelli 3D e le planimetrie 2D direttamente compatibili con AutoCAD (2023+).
-      </p>
-      <div class="cad-grid">
-        <div class="card">
-          <div class="icon"><i class="fas fa-file-export"></i></div>
-          <h3>USDZ / USD (Modificabile)</h3>
-          <p>Export nativo da RoomPlan → import diretto in AutoCAD con comando IMPORT.<br>Mantiene quote parametriche (muri, porte, finestre).</p>
-        </div>
-        <div class="card">
-          <div class="icon"><i class="fas fa-file-pdf"></i></div>
-          <h3>PDF Vettoriale</h3>
-          <p>Planimetria 2D con quote e layers → apribile e modificabile in AutoCAD come PDF underlay.</p>
-        </div>
-        <div class="card">
-          <div class="icon"><i class="fas fa-drafting-compass"></i></div>
-          <h3>DXF (in sviluppo)</h3>
-          <p>Generazione 2D puro (linee, testi quote, layers Pareti/Porte) – compatibile con tutte le versioni AutoCAD.</p>
+      <div class="cad-section">
+        <h2>Integrazione con AutoCAD</h2>
+        <p style="font-size:1.4rem; max-width:840px; margin:0 auto 4rem; color:var(--muted); line-height:1.8;">
+          Esporta i modelli 3D e le planimetrie 2D direttamente compatibili con AutoCAD (2023+).
+        </p>
+        <div class="cad-grid">
+          <div class="card">
+            <div class="icon"><i class="fas fa-file-export"></i></div>
+            <h3>USDZ / USD (Modificabile)</h3>
+            <p>Export nativo da RoomPlan → import diretto in AutoCAD con comando IMPORT.<br>Mantiene quote parametriche (muri, porte, finestre).</p>
+          </div>
+          <div class="card">
+            <div class="icon"><i class="fas fa-file-pdf"></i></div>
+            <h3>PDF Vettoriale</h3>
+            <p>Planimetria 2D con quote e layers → apribile e modificabile in AutoCAD come PDF underlay.</p>
+          </div>
+          <div class="card">
+            <div class="icon"><i class="fas fa-drafting-compass"></i></div>
+            <h3>DXF (in sviluppo)</h3>
+            <p>Generazione 2D puro (linee, testi quote, layers Pareti/Porte) – compatibile con tutte le versioni AutoCAD.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -267,89 +270,66 @@
   <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero: animazione ultra-fluida e progressiva
+    // ────────────────────────────────────────────────
+    // Hero entrance
     gsap.timeline()
-      .from(".hero h1", {
-        y: 180,
-        opacity: 0,
-        duration: 1.8,
-        ease: "power4.out"
-      })
-      .from(".hero p", {
-        y: 100,
-        opacity: 0,
-        duration: 1.4,
-        ease: "power4.out"
-      }, "-=1")
-      .from(".btn", {
-        y: 80,
-        opacity: 0,
-        duration: 1.2,
-        stagger: 0.2,
-        ease: "elastic.out(1, 0.6)"
-      }, "-=0.8");
+      .from(".hero h1", { y: 180, opacity: 0, duration: 1.8, ease: "power4.out" })
+      .from(".hero p",   { y: 100, opacity: 0, duration: 1.4, ease: "power4.out" }, "-=1")
+      .from(".btn",      { y: 80,  opacity: 0, duration: 1.2, stagger: 0.2, ease: "elastic.out(1, 0.6)" }, "-=0.8");
 
-    // Titoli sezioni: leggero parallax + fade
-    gsap.utils.toArray("section h2").forEach((title) => {
+    // Titoli sezioni
+    gsap.utils.toArray("section h2").forEach(title => {
       gsap.from(title, {
-        scrollTrigger: {
-          trigger: title,
-          start: "top 80%",
-          toggleActions: "play none none reverse"
-        },
-        y: 100,
-        opacity: 0,
-        duration: 1.6,
-        ease: "power4.out"
+        scrollTrigger: { trigger: title, start: "top 80%", toggleActions: "play none none reverse" },
+        y: 100, opacity: 0, duration: 1.6, ease: "power4.out"
       });
     });
 
-    // Card: stagger fluido e naturale
+    // Card stagger
     gsap.utils.toArray(".card").forEach((card, i) => {
       gsap.from(card, {
-        scrollTrigger: {
-          trigger: card,
-          start: "top 85%",
-          toggleActions: "play none none reverse"
-        },
-        y: 140,
-        opacity: 0,
-        duration: 1.4,
-        ease: "power4.out",
-        delay: i * 0.1
+        scrollTrigger: { trigger: card, start: "top 85%", toggleActions: "play none none reverse" },
+        y: 140, opacity: 0, duration: 1.4, ease: "power4.out", delay: i * 0.1
       });
     });
 
-    // Hover pulsanti: glow + scale super smooth
+    // Pulsanti hover
     document.querySelectorAll(".btn").forEach(btn => {
       btn.addEventListener("mouseenter", () => {
-        gsap.to(btn, {
-          scale: 1.1,
-          y: -8,
-          duration: 0.8,
-          ease: "power3.out",
-          boxShadow: "0 25px 60px rgba(0,212,255,0.6)"
-        });
+        gsap.to(btn, { scale: 1.1, y: -8, duration: 0.8, ease: "power3.out", boxShadow: "0 25px 60px rgba(0,212,255,0.6)" });
       });
       btn.addEventListener("mouseleave", () => {
-        gsap.to(btn, {
-          scale: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power3.out",
-          boxShadow: btn.classList.contains("btn-primary") 
-            ? "0 12px 40px rgba(0,212,255,0.4)" 
-            : "none"
-        });
+        gsap.to(btn, { scale: 1, y: 0, duration: 0.8, ease: "power3.out", boxShadow: btn.classList.contains("btn-primary") ? "0 12px 40px rgba(0,212,255,0.4)" : "none" });
       });
     });
 
-    // Header shrink ultra-smooth
+    // Header shrink
     ScrollTrigger.create({
       start: "top -100",
       onEnter: () => gsap.to("#header", { padding: "12px 0", background: "rgba(0,0,0,0.96)", duration: 0.6, ease: "power2.out" }),
       onLeaveBack: () => gsap.to("#header", { padding: "20px 0", background: "rgba(0,0,0,0.75)", duration: 0.6, ease: "power2.out" })
     });
+
+    // ────────────────────────────────────────────────
+    // FIX PRINCIPALE: Smooth scroll per i link #cad #contact
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        const targetId = this.getAttribute('href').substring(1);
+        const target = document.getElementById(targetId);
+
+        if (target) {
+          // Usa GSAP per scroll fluido premium
+          gsap.to(window, {
+            duration: 1.4,
+            scrollTo: { y: target, offsetY: 80 }, // offset per non coprire con header fisso
+            ease: "power4.inOut"
+          });
+        }
+      });
+    });
+    // ────────────────────────────────────────────────
   </script>
 
 </body>
